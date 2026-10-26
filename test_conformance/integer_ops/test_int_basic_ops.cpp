@@ -27,8 +27,6 @@
 #include "harness/ThreadPool.h"
 #include "harness/parseParameters.h"
 
-#define NUM_TESTS 23
-
 #define LONG_MATH_SHIFT_SIZE 25
 #define INT_MATH_SHIFT_SIZE 24
 #define SHORT_MATH_SHIFT_SIZE 23
@@ -193,8 +191,6 @@ void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
 }
 
 // External verification and data generation functions
-extern const char *tests[];
-extern const char *test_names[];
 extern int verify_long(int test, size_t vector_size, cl_long *inptrA,
                        cl_long *inptrB, cl_long *outptr, cl_long *ref, size_t n,
                        bool a_scalar, bool b_scalar, cl_event &event);
@@ -358,61 +354,41 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
 
         for (int i = start_test_ID; i < end_test_ID; i++)
         {
-            switch (i)
+            const TestDef &test_def = test_defs[i];
+            const char *out_type_name =
+                (test_def.signed_result && vectorSize != 1) ? signed_type_name
+                                                            : type_name;
+            switch (test_def.template_kind)
             {
-                case 10:
-                case 11:
+                case kKernelScalarShift:
                     sprintf(programString,
                             vectorSize == 3 ? kernel_code_scalar_shift_V3
                                             : kernel_code_scalar_shift,
                             type_name, inputAVectorString, type_name,
-                            inputBVectorString, type_name, vectorString,
-                            tests[i], ((vectorSize == 1) ? "" : ".s0"));
+                            inputBVectorString, out_type_name, vectorString,
+                            test_def.op, ((vectorSize == 1) ? "" : ".s0"));
                     break;
-                case 12:
+                case kKernelUnary:
                     sprintf(
                         programString,
                         vectorSize == 3 ? not_kernel_code_V3 : not_kernel_code,
                         type_name, inputAVectorString, type_name,
-                        inputBVectorString, type_name, vectorString, tests[i]);
+                        inputBVectorString, out_type_name, vectorString,
+                        test_def.op);
                     break;
-                case 13:
+                case kKernelQuestionColon:
                     sprintf(programString,
                             vectorSize == 3 ? kernel_code_question_colon_V3
                                             : kernel_code_question_colon,
                             type_name, inputAVectorString, type_name,
-                            inputBVectorString, type_name, vectorString,
+                            inputBVectorString, out_type_name, vectorString,
                             ((vectorSize == 1) ? "" : ".s0"),
                             ((vectorSize == 1) ? "" : ".s0"));
                     break;
-                case 14:
-                case 15:
-                case 16:
-                case 17:
-                case 18:
-                case 19:
-                case 20:
-                case 21:
-                    // Need an unsigned result here for vector sizes > 1
+                case kKernelBinary:
                     sprintf(programString, kernel_code_base, type_name,
                             inputAVectorString, type_name, inputBVectorString,
-                            ((vectorSize == 1) ? type_name : signed_type_name),
-                            vectorString, tests[i]);
-                    break;
-                case 22:
-                    // Need an unsigned result here for vector sizes > 1
-                    sprintf(programString,
-                            vectorSize == 3 ? not_kernel_code_V3
-                                            : not_kernel_code,
-                            type_name, inputAVectorString, type_name,
-                            inputBVectorString,
-                            ((vectorSize == 1) ? type_name : signed_type_name),
-                            vectorString, tests[i]);
-                    break;
-                default:
-                    sprintf(programString, kernel_code_base, type_name,
-                            inputAVectorString, type_name, inputBVectorString,
-                            type_name, vectorString, tests[i]);
+                            out_type_name, vectorString, test_def.op);
                     break;
             }
 
@@ -745,7 +721,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                     break;
             }
 
-            if (auto definedOp = get_defined_arithmetic_op(tests[i]))
+            if (auto definedOp = get_defined_arithmetic_op(test_defs[i].op))
             {
                 init_defined_arithmetic_data(
                     type, *definedOp, num_elements,
@@ -908,18 +884,19 @@ int run_specific_test(cl_device_id deviceID, cl_context context, cl_command_queu
 }
 
 // Run multiple tests for a given type
-int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, int *tests, int total_tests) {
+int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num, TestGroup group) {
     int errors = 0;
 
     if (gWimpyMode)
         num = std::max(CHAR_MATH_SHIFT_SIZE, num - SHIFT_WIMPY_REDUCTION);
 
-    int i;
-    for (i=0; i<total_tests; i++)
+    for (int i = 0; i < NUM_TESTS; i++)
     {
+        if (test_defs[i].group != group) continue;
+
         int localErrors;
-        log_info("Testing \"%s\" ", test_names[tests[i]]);  fflush( stdout );
-        localErrors = run_specific_test(deviceID, context, queue, num_elements, type, num, tests[i]);
+        log_info("Testing \"%s\" ", test_defs[i].name);  fflush( stdout );
+        localErrors = run_specific_test(deviceID, context, queue, num_elements, type, num, i);
         if( localErrors )
             log_info( "FAILED\n" );
         else
@@ -933,26 +910,22 @@ int run_multiple_tests(cl_device_id deviceID, cl_context context, cl_command_que
 
 // Run all the math tests for a given type
 int run_test_math(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    int tests[] = {0, 1, 2, 3, 4};
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, tests, (int)(sizeof(tests)/sizeof(int)));
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupMath);
 }
 
 // Run all the logic tests for a given type
 int run_test_logic(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    int tests[] = {5, 6, 7, 12, 14, 15, 22};
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, tests, (int)(sizeof(tests)/sizeof(int)));
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupLogic);
 }
 
 // Run all the shifting tests for a given type
 int run_test_shift(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    int tests[] = {8, 9, 10, 11};
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, tests, (int)(sizeof(tests)/sizeof(int)));
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupShift);
 }
 
 // Run all the comparison tests for a given type
 int run_test_compare(cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num) {
-    int tests[] = {13, 16, 17, 18, 19, 20, 21};
-    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, tests, (int)(sizeof(tests)/sizeof(int)));
+    return run_multiple_tests(deviceID, context, queue, num_elements, type, num, kGroupCompare);
 }
 
 // Run all tests for a given type
@@ -1211,7 +1184,7 @@ int run_test_sizes(cl_device_id deviceID, cl_context context, cl_command_queue q
 {
     int errors = 0;
 
-    if (testID == 13)
+    if (test_defs[testID].template_kind == kKernelQuestionColon)
     {
         int sizes[] = { 2, 3, 4, 8, 16, 0 };
         for (int i = 0; sizes[i] != 0; i++)
@@ -1241,18 +1214,18 @@ int run_test_sizes(cl_device_id deviceID, cl_context context, cl_command_queue q
 int run_vector_scalar_tests( cl_device_id deviceID, cl_context context, cl_command_queue queue, int num_elements, ExplicitType type, int num )
 {
     int errors = 0;
-    size_t i;
 
     // Shift operators:
     // a) cannot take scalars as first parameter and vectors as second
-    // b) have the vector >> scalar case tested by tests 10 and 11
+    // b) have the vector >> scalar case tested by kOpShrScalar and kOpShlScalar
     // so they get skipped entirely
 
-    int testsToRun[] = { 0, 1, 2, 3, 4, 5, 6, 7,
-        13, 14, 15, 16, 17, 18, 19, 20, 21 };
-    for (i=0; i< sizeof(testsToRun)/sizeof(testsToRun[0]); i++)
+    for (int i = 0; i < NUM_TESTS; i++)
     {
-        errors += run_test_sizes(deviceID, context, queue, 2048, type, num, testsToRun[i]);
+        if (test_defs[i].group == kGroupShift
+            || test_defs[i].template_kind == kKernelUnary)
+            continue;
+        errors += run_test_sizes(deviceID, context, queue, 2048, type, num, i);
     }
     return errors;
 }
