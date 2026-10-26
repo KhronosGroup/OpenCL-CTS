@@ -15,6 +15,7 @@
 //
 #include "testBase.h"
 
+#include <array>
 #include <memory>
 #include <stdio.h>
 #include <string.h>
@@ -193,32 +194,32 @@ void init_data_8bit(uint64_t indx, uint32_t num_elements, InputTy *inputA,
 // External verification and data generation functions
 extern int verify_long(int test, size_t vector_size, cl_long *inptrA,
                        cl_long *inptrB, cl_long *outptr, cl_long *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event &event);
+                       bool a_scalar, bool b_scalar, cl_event event);
 extern int verify_ulong(int test, size_t vector_size, cl_ulong *inptrA,
                         cl_ulong *inptrB, cl_ulong *outptr, cl_ulong *ref,
                         size_t n, bool a_scalar, bool b_scalar,
-                        cl_event &event);
+                        cl_event event);
 extern int verify_int(int test, size_t vector_size, cl_int *inptrA,
                       cl_int *inptrB, cl_int *outptr, cl_int *ref, size_t n,
-                      bool a_scalar, bool b_scalar, cl_event &event);
+                      bool a_scalar, bool b_scalar, cl_event event);
 extern int verify_uint(int test, size_t vector_size, cl_uint *inptrA,
                        cl_uint *inptrB, cl_uint *outptr, cl_uint *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event &event);
+                       bool a_scalar, bool b_scalar, cl_event event);
 extern int verify_short(int test, size_t vector_size, cl_short *inptrA,
                         cl_short *inptrB, cl_short *outptr, cl_short *ref,
                         size_t n, bool a_scalar, bool b_scalar,
-                        cl_event &event);
+                        cl_event event);
 extern int verify_ushort(int test, size_t vector_size, cl_ushort *inptrA,
                          cl_ushort *inptrB, cl_ushort *outptr, cl_ushort *ref,
                          size_t n, bool a_scalar, bool b_scalar,
-                         cl_event &event);
+                         cl_event event);
 extern int verify_char(int test, size_t vector_size, cl_char *inptrA,
                        cl_char *inptrB, cl_char *outptr, cl_char *ref, size_t n,
-                       bool a_scalar, bool b_scalar, cl_event &event);
+                       bool a_scalar, bool b_scalar, cl_event event);
 extern int verify_uchar(int test, size_t vector_size, cl_uchar *inptrA,
                         cl_uchar *inptrB, cl_uchar *outptr, cl_uchar *ref,
                         size_t n, bool a_scalar, bool b_scalar,
-                        cl_event &event);
+                        cl_event event);
 
 // Supported type list
 const ExplicitType types[] = {
@@ -714,7 +715,7 @@ int test_integer_ops(cl_device_id deviceID, cl_context context,
                 pThreadData->m_input_ptr[1].data(), 0, NULL, NULL);
             test_error(err, "clEnqueueWriteBuffer failed");
 
-            std::vector<cl_event> read_events(6, nullptr);
+            std::array<clEventWrapper, 6> read_events;
 
             // Loop over each vector size to enqueue NDRange and ReadBuffer
             for (int vSize : vectorSizes)
