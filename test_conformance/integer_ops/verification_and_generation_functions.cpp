@@ -35,8 +35,10 @@ const TestDef test_defs[NUM_TESTS] = {
     { kOpBitXor, "^", "^", kKernelBinary, false, kGroupLogic },
     { kOpShrVec, ">>", ">> by vector", kKernelBinary, false, kGroupShift },
     { kOpShlVec, "<<", "<< by vector", kKernelBinary, false, kGroupShift },
-    { kOpShrScalar, ">>", ">> by scalar", kKernelScalarShift, false, kGroupShift },
-    { kOpShlScalar, "<<", "<< by scalar", kKernelScalarShift, false, kGroupShift },
+    { kOpShrScalar, ">>", ">> by scalar", kKernelScalarShift, false,
+      kGroupShift },
+    { kOpShlScalar, "<<", "<< by scalar", kKernelScalarShift, false,
+      kGroupShift },
     { kOpBitNot, "~", "~", kKernelUnary, false, kGroupLogic },
     { kOpTernary, "?:", "?:", kKernelQuestionColon, false, kGroupCompare },
     { kOpLogAnd, "&&", "&&", kKernelBinary, true, kGroupLogic },
@@ -115,19 +117,16 @@ static void compute_references(int test, size_t vector_size,
     switch (test_def.id)
     {
         case kOpAdd:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] + inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] + inptrB[i]; });
             break;
         case kOpSub:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] - inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] - inptrB[i]; });
             break;
         case kOpMul:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] * inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] * inptrB[i]; });
             break;
         case kOpDiv:
             compute_loop_i(ref, n, [&](size_t i) -> T {
@@ -144,19 +143,16 @@ static void compute_references(int test, size_t vector_size,
             });
             break;
         case kOpBitAnd:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] & inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] & inptrB[i]; });
             break;
         case kOpBitOr:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] | inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] | inptrB[i]; });
             break;
         case kOpBitXor:
-            compute_loop_i(ref, n, [&](size_t i) -> T {
-                return inptrA[i] ^ inptrB[i];
-            });
+            compute_loop_i(
+                ref, n, [&](size_t i) -> T { return inptrA[i] ^ inptrB[i]; });
             break;
         case kOpShrVec:
             compute_loop_i(ref, n, [&](size_t i) -> T {
@@ -386,8 +382,8 @@ int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
                 if (test == kOpShrVec || test == kOpShlVec)
                 {
                     log_error("%s Verification failed at element %zu of "
-                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64
-                              " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
+                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64 " = 0x%" PRIx64
+                              ", got 0x%" PRIx64 "\n",
                               type_name, i, n, (cl_ulong)inptrA[i],
                               test_defs[test].op, (cl_ulong)inptrB[i],
                               (cl_ulong)r, (cl_ulong)outptr[i]);
@@ -437,8 +433,8 @@ int verify(int test, size_t vector_size, T *inptrA_raw, T *inptrB_raw,
                 else
                 {
                     log_error("%s Verification failed at element %zu of "
-                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64
-                              " = 0x%" PRIx64 ", got 0x%" PRIx64 "\n",
+                              "%zu: 0x%" PRIx64 " %s 0x%" PRIx64 " = 0x%" PRIx64
+                              ", got 0x%" PRIx64 "\n",
                               type_name, i, n, (cl_ulong)inptrA[i],
                               test_defs[test].op, (cl_ulong)inptrB[i],
                               (cl_ulong)r, (cl_ulong)outptr[i]);
