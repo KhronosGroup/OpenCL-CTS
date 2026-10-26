@@ -311,13 +311,13 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
     pThis->m_input_ptr[1].resize(pThis->m_type_size * num_elements);
     pThis->m_reference_ptr.resize(pThis->m_type_size * num_elements);
     pThis->m_streams[0] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE,
+        clCreateBuffer(context, CL_MEM_READ_ONLY,
                        pThis->m_type_size * num_elements, NULL, &err);
 
     test_error(err, "clCreateBuffer failed");
 
     pThis->m_streams[1] =
-        clCreateBuffer(context, CL_MEM_READ_WRITE,
+        clCreateBuffer(context, CL_MEM_READ_ONLY,
                        pThis->m_type_size * num_elements, NULL, &err);
 
     test_error(err, "clCreateBuffer failed");
@@ -328,7 +328,7 @@ cl_int perThreadDataInit(perThreadData *pThis, ExplicitType type,
         assert(vIdx >= 0);
         pThis->m_output_ptr[vIdx].resize(pThis->m_type_size * num_elements);
         pThis->m_out_streams[vIdx] =
-            clCreateBuffer(context, CL_MEM_READ_WRITE,
+            clCreateBuffer(context, CL_MEM_WRITE_ONLY,
                            pThis->m_type_size * num_elements, NULL, &err);
         test_error(err, "clCreateBuffer failed");
     }
