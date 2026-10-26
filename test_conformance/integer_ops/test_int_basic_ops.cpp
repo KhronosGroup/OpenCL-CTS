@@ -458,7 +458,7 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
     cl_command_queue queue;
 
 #if THREAD_DEBUG
-    log_error("Thread %x (job %x) about to create command queue\n",
+    log_error("Thread %u (job %u) about to create command queue\n",
               thread_id, job_id);
 #endif
 
@@ -468,13 +468,13 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
 
     if(error != CL_SUCCESS)
     {
-        log_error("Thread %x (job %x) could not create command queue\n",
+        log_error("Thread %u (job %u) could not create command queue\n",
                   thread_id, job_id);
         return error; // should we clean up the queue too?
     }
 
 #if THREAD_DEBUG
-    log_error("Thread %x (job %x) created command queue\n",
+    log_error("Thread %u (job %u) created command queue\n",
               thread_id, job_id);
 #endif
 
@@ -491,7 +491,7 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
 
     if(result != 0)
     {
-        log_error("Thread %x (job %x) failed test_integer_ops with result %x\n",
+        log_error("Thread %u (job %u) failed test_integer_ops with result %d\n",
                   thread_id, job_id, result);
         // return error;
     }
@@ -499,15 +499,15 @@ cl_int test_integer_ops_do_thread( cl_uint job_id, cl_uint thread_id, void *user
     error = clFinish(queue);
     if (error != CL_SUCCESS)
     {
-        vlog_error("Thread %x (job %x) could not finish the command queue\n",
-                   thread_id, job_id);
+        log_error("Thread %u (job %u) could not finish the command queue\n",
+                  thread_id, job_id);
         return error;
     }
 
     error = clReleaseCommandQueue(queue);
     if(error != CL_SUCCESS)
     {
-        log_error("Thread %x (job %x) could not release command queue\n",
+        log_error("Thread %u (job %u) could not release command queue\n",
                   thread_id, job_id);
         return error;
     }
