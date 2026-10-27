@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "harness/parseParameters.h"
 
 // Verify that clEnqueueNDRangeKernel returns:
 // -CL_INVALID_WORK_ITEM_SIZE when local_work_size is greater than
@@ -238,6 +239,65 @@ REGISTER_TEST(negative_enqueue_zero_work_group)
             }
         }
     }
+
+    return TEST_PASS;
+}
+
+// Verify that clEnqueueNDRangeKernel returns CL_INVALID_WORK_GROUP_SIZE when
+// the global size is not evenly divisible by the local size and the kernel
+// comes from a program built from source without -cl-std. Such a program is
+// compiled for OpenCL C 1.x, which requires uniform work-groups
+REGISTER_TEST(negative_enqueue_non_uniform_work_group_size)
+{
+    cl_int error = CL_SUCCESS;
+
+    // Offline compilation rules do not apply
+    if (gCompilationMode != kOnline)
+    {
+        log_info("Test requires online compilation, skipping test\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    // Build without options (including -cl-std), so the program is compiled for
+    // the highest OpenCL C 1.x version supported by the device. Thus,
+    // create_single_kernel_helper is not used - it adds -cl-std automatically
+    const char* kernel_test = "__kernel void test(){}\n";
+
+    clProgramWrapper program =
+        clCreateProgramWithSource(context, 1, &kernel_test, NULL, &error);
+    test_error(error, "clCreateProgramWithSource failed");
+
+    error = clBuildProgram(program, 1, &device, NULL, NULL, NULL);
+    test_error(error, "clBuildProgram failed");
+
+    clKernelWrapper kernel = clCreateKernel(program, "test", &error);
+    test_error(error, "clCreateKernel failed");
+
+    size_t maxWorkGroupSize = 0;
+    error = get_max_allowed_1d_work_group_size_on_device(device, kernel,
+                                                         &maxWorkGroupSize);
+    test_error(error, "get_max_allowed_1d_work_group_size_on_device failed");
+
+    // A local size of 2 with a global size of 3 gives a non-uniform
+    // work-group, while the local size stays within all limits.
+    const size_t localWorkSize = 2;
+    const size_t globalWorkSize = 3;
+
+    if (maxWorkGroupSize < localWorkSize)
+    {
+        log_info("Device does not allow a work-group size of %zu, skipping "
+                 "test\n",
+                 localWorkSize);
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalWorkSize,
+                                   &localWorkSize, 0, NULL, NULL);
+    test_failure_error_ret(error, CL_INVALID_WORK_GROUP_SIZE,
+                           "Program built without -cl-std requires uniform "
+                           "work-groups but clEnqueueNDRangeKernel did not "
+                           "return CL_INVALID_WORK_GROUP_SIZE as expected",
+                           TEST_FAIL);
 
     return TEST_PASS;
 }

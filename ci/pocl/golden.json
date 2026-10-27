@@ -21,6 +21,7 @@
           "negative_enqueue_work_group_size_exceeded": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
           "negative_set_kernel_arg_invalid_image": "pass",
+          "negative_enqueue_non_uniform_work_group_size": "pass",
           "set_kernel_arg_struct_array": "pass"
         }
     },
