@@ -163,7 +163,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k2DArrayTo2D:
                     test_configs.emplace_back(
-                        "2DArrayTo2D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
+                        "2DarrayTo2D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
                         CL_MEM_OBJECT_IMAGE2D,
@@ -173,7 +173,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k2DTo2DArray:
                     test_configs.emplace_back(
-                        "2DTo2DArray", CL_MEM_OBJECT_IMAGE2D,
+                        "2DTo2Darray", CL_MEM_OBJECT_IMAGE2D,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
                         CL_MEM_OBJECT_IMAGE2D_ARRAY,
@@ -183,7 +183,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k2DArrayTo3D:
                     test_configs.emplace_back(
-                        "2DArrayTo3D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
+                        "2DarrayTo3D", CL_MEM_OBJECT_IMAGE2D_ARRAY,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
                         CL_MEM_OBJECT_IMAGE3D,
@@ -193,7 +193,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k3DTo2DArray:
                     test_configs.emplace_back(
-                        "3DTo2DArray", CL_MEM_OBJECT_IMAGE3D,
+                        "3DTo2Darray", CL_MEM_OBJECT_IMAGE3D,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
                         CL_MEM_OBJECT_IMAGE2D_ARRAY,
@@ -203,14 +203,14 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k1DBuffer:
                     test_configs.emplace_back(
-                        "1DBuffer", CL_MEM_OBJECT_IMAGE1D_BUFFER,
+                        "1Dbuffer", CL_MEM_OBJECT_IMAGE1D_BUFFER,
                         CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE1D_BUFFER,
                         CL_MEM_READ_ONLY, test_copy_image_set_1D_buffer,
                         channel_type);
                     break;
                 case k1DTo1DBuffer:
                     test_configs.emplace_back(
-                        "1DTo1DBuffer", CL_MEM_OBJECT_IMAGE1D,
+                        "1DTo1Dbuffer", CL_MEM_OBJECT_IMAGE1D,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
                         CL_MEM_OBJECT_IMAGE1D_BUFFER, CL_MEM_READ_ONLY,
@@ -218,7 +218,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                     break;
                 case k1DBufferTo1D:
                     test_configs.emplace_back(
-                        "1DBufferTo1D", CL_MEM_OBJECT_IMAGE1D_BUFFER,
+                        "1DbufferTo1D", CL_MEM_OBJECT_IMAGE1D_BUFFER,
                         CL_MEM_READ_ONLY, CL_MEM_OBJECT_IMAGE1D,
                         ctx.enablePitch ? CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY
                                         : CL_MEM_READ_ONLY,
