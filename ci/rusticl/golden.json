@@ -1,0 +1,16 @@
+{
+    "test_api": {
+        "": {
+            "enqueue_task": "pass"
+        }
+    },
+    "test_computeinfo": {
+        "": {
+            "computeinfo": "pass",
+            "device_uuid": "pass",
+            "extended_versioning": "pass",
+            "conformance_version": "pass",
+            "pci_bus_info": "skip"
+        }
+    }
+}

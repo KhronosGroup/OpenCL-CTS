@@ -31,7 +31,7 @@ namespace {
 const char* constant_kernel_code = R"(
 __kernel void constant_kernel(__global float *out, __constant float *tmpF, __constant int *tmpI)
 {
-    int  tid = get_global_id(0);
+    size_t tid = get_global_id(0);
 
     float ftmp = tmpF[tid];
     float Itmp = tmpI[tid];
@@ -42,7 +42,7 @@ __kernel void constant_kernel(__global float *out, __constant float *tmpF, __con
 const char* loop_constant_kernel_code = R"(
 kernel void loop_constant_kernel(global float *out, constant float *i_pos, int num)
 {
-    int tid = get_global_id(0);
+    size_t tid = get_global_id(0);
     float sum = 0;
     for (int i = 0; i < num; i++) {
         float  pos  = i_pos[i*3];
@@ -56,7 +56,7 @@ kernel void loop_constant_kernel(global float *out, constant float *i_pos, int n
 int verify(std::vector<cl_float>& tmpF, std::vector<cl_int>& tmpI,
            std::vector<cl_float>& out)
 {
-    for (int i = 0; i < out.size(); i++)
+    for (size_t i = 0; i < out.size(); i++)
     {
         float f = tmpF[i] * tmpI[i];
         if (out[i] != f)
