@@ -240,7 +240,6 @@ static int findRequirements(cl_device_id device,
     {
         capabilities.push_back(spv::CapabilityImage1D);
         capabilities.push_back(spv::CapabilityImageBasic);
-        capabilities.push_back(spv::CapabilityImageBuffer);
         capabilities.push_back(spv::CapabilityLiteralSampler);
         capabilities.push_back(spv::CapabilitySampled1D);
         capabilities.push_back(spv::CapabilitySampledBuffer);
