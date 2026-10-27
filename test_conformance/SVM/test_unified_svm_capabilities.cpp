@@ -18,6 +18,12 @@
 #include <cinttypes>
 #include <memory>
 
+#if !defined(CL_SVM_CAPABILITY_CREATE_BUFFER_KHR)
+#define CL_SVM_CAPABILITY_CREATE_BUFFER_KHR (1 << 15)
+#else
+#pragma message("CL_SVM_CAPABILITY_CREATE_BUFFER_KHR is now properly defined.")
+#endif
+
 struct UnifiedSVMCapabilities : UnifiedSVMBase
 {
     UnifiedSVMCapabilities(cl_context context, cl_device_id device,
@@ -531,6 +537,77 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int test_CL_SVM_CAPABILITY_CREATE_BUFFER_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+
+        // setup
+        auto mem = get_usvm_wrapper<cl_uint>(typeIndex);
+        err = mem->allocate(1);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_CheckAndUpdate)
+        {
+            err = createCheckAndUpdateKernel();
+            test_error(err, "could not create CheckAndUpdate kernel");
+        }
+
+        cl_uint value = genrand_int32(d);
+        err = mem->write(value);
+        test_error(err, "could not write to usvm memory");
+
+        clMemWrapper buf = clCreateBuffer(context, CL_MEM_USE_HOST_PTR,
+                                          sizeof(value), mem->get_ptr(), &err);
+        test_error(err, "could not create buffer with usvm memory");
+
+        // run the kernel on the buffer
+        err |= clSetKernelArg(kernel_CheckAndUpdate, 0, sizeof(buf), &buf);
+        err |= clSetKernelArg(kernel_CheckAndUpdate, 1, sizeof(value), &value);
+        cl_uint one = 1;
+        err |= clSetKernelArg(kernel_CheckAndUpdate, 2, sizeof(one), &one);
+        test_error(err, "could not set kernel arguments");
+
+        size_t global_work_size = 1;
+        err = clEnqueueNDRangeKernel(queue, kernel_CheckAndUpdate, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        cl_uint check = ~0;
+        err = mem->read(check);
+        test_error(err, "could not read from usvm memory");
+        test_assert_error(check == value + one,
+                          "read value from usvm memory does not match");
+
+        // run the kernel on the usvm memory
+        value = genrand_int32(d);
+        err = clEnqueueWriteBuffer(queue, buf, CL_TRUE, 0, sizeof(value),
+                                   &value, 0, nullptr, nullptr);
+        test_error(err, "could not write to buffer");
+
+        err |=
+            clSetKernelArgSVMPointer(kernel_CheckAndUpdate, 0, mem->get_ptr());
+        err |= clSetKernelArg(kernel_CheckAndUpdate, 1, sizeof(value), &value);
+        test_error(err, "could not set kernel arguments");
+
+        err = clEnqueueNDRangeKernel(queue, kernel_CheckAndUpdate, 1, nullptr,
+                                     &global_work_size, nullptr, 0, nullptr,
+                                     nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        check = ~0;
+        err = clEnqueueReadBuffer(queue, buf, CL_TRUE, 0, sizeof(check), &check,
+                                  0, nullptr, nullptr);
+        test_error(err, "could not read buffer");
+        test_assert_error(check == value + one,
+                          "read value from buffer does not match");
+
+        return CL_SUCCESS;
+    }
+
     cl_int run() override
     {
         cl_int err;
@@ -604,6 +681,12 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                 log_info("     testing CL_SVM_CAPABILITY_INDIRECT_ACCESS\n");
                 err = test_CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR(ti);
                 test_error(err, "CL_SVM_CAPABILITY_INDIRECT_ACCESS failed");
+            }
+            if (caps & CL_SVM_CAPABILITY_CREATE_BUFFER_KHR)
+            {
+                log_info("     testing CL_SVM_CAPABILITY_CREATE_BUFFER_KHR\n");
+                err = test_CL_SVM_CAPABILITY_CREATE_BUFFER_KHR(ti);
+                test_error(err, "CL_SVM_CAPABILITY_CREATE_BUFFER_KHR failed");
             }
         }
         return CL_SUCCESS;
@@ -701,11 +784,35 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int createCheckAndUpdateKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            kernel void check_and_add(global uint* ptr, uint check, uint increment)
+            {
+                size_t index = get_global_id(0);
+                if (ptr[index] == check) {
+                    ptr[index] += increment;
+                }
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(context, &program,
+                                          &kernel_CheckAndUpdate, 1,
+                                          &programString, "check_and_add");
+        test_error(err, "could not create CheckAndUpdate kernel");
+
+        return CL_SUCCESS;
+    }
+
     clKernelWrapper kernel_StorePointer;
     clKernelWrapper kernel_CopyMemory;
     clKernelWrapper kernel_AtomicIncrement;
     clKernelWrapper kernel_IndirectAccessRead;
     clKernelWrapper kernel_IndirectAccessWrite;
+    clKernelWrapper kernel_CheckAndUpdate;
 };
 
 REGISTER_TEST(unified_svm_capabilities)
