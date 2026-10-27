@@ -116,7 +116,7 @@
             "rint": "pass",
             "rootn": "fail",
             "round": "pass",
-            "rsqrt": "pass",
+            "rsqrt": "fail",
             "signbit": "pass",
             "sin": "pass",
             "sincos": "pass",
