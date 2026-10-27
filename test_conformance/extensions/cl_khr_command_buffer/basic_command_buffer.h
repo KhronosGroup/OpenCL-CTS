@@ -157,10 +157,10 @@ int MakeAndRunTest(cl_device_id device, cl_context context,
         cl_version extension_version =
             get_extension_version(device, "cl_khr_command_buffer");
 
-        if (extension_version != CL_MAKE_VERSION(0, 9, 8))
+        if (extension_version < CL_MAKE_VERSION(1, 0, 0))
         {
-            log_info("cl_khr_command_buffer version 0.9.8 is required to run "
-                     "the test, skipping.\n ");
+            log_info("cl_khr_command_buffer version 1.0.0 or newer is required "
+                     "to run the test, skipping.\n ");
             return TEST_SKIPPED_ITSELF;
         }
     }

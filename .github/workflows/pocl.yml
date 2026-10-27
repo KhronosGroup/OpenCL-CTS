@@ -6,8 +6,8 @@ permissions:
   pull-requests: read
 
 env:
-  LLVM_VERSION: 20
-  TRANSLATOR_BRANCH: llvm_release_200
+  LLVM_VERSION: 22
+  TRANSLATOR_BRANCH: llvm_release_220
   POCL_VERSION: v7.2
   VULKAN_SDK_VERSION: 1.4.309.0
 

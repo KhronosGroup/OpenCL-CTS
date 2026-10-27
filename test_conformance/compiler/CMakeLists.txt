@@ -19,14 +19,21 @@ set(${MODULE_NAME}_SOURCES
 
 include(../CMakeCommon.txt)
 
-# Include the relative paths to SPV assembly files
-configure_file(spirv_asm_list.txt ${CMAKE_CURRENT_BINARY_DIR}/spirv_asm_list.txt)
-include(${CMAKE_CURRENT_BINARY_DIR}/spirv_asm_list.txt)
-
 # Determine the corresponding binary outputs to the SPV assembly input files
 set(COMPILER_ASM_REL_PATH spirv_asm)
 set(COMPILER_ASM_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${COMPILER_ASM_REL_PATH}")
 set(COMPILER_SPV_PATH "${CMAKE_CURRENT_BINARY_DIR}/spirv_bin")
+set(COMPILER_ASM_FILES
+    write_kernel.spvasm32
+    write_kernel.spvasm64)
+
+set(COMPILER_ASM "")
+set(COMPILER_SPV "")
+foreach(COMPILER_ASM_FILE ${COMPILER_ASM_FILES})
+    list(APPEND COMPILER_ASM "${COMPILER_ASM_PATH}/${COMPILER_ASM_FILE}")
+    string(REPLACE ".spvasm" ".spv" COMPILER_SPV_FILE ${COMPILER_ASM_FILE})
+    list(APPEND COMPILER_SPV "${COMPILER_SPV_PATH}/${COMPILER_SPV_FILE}")
+endforeach()
 
 # Copy the required test include directories into the build directory.
 if(NOT DEFINED COMPILER_TEST_RESOURCES)
@@ -54,9 +61,18 @@ add_custom_command(
         COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CLConform_SOURCE_DIR}/test_conformance/compiler/secondIncludeTestDirectory
         ${COMPILER_TEST_RESOURCES}/secondIncludeTestDirectory
+        VERBATIM)
+
+add_custom_command(
+        OUTPUT ${COMPILER_SPV}
+        COMMENT "Generating compiler SPIR-V binaries..."
         COMMAND ${Python3_EXECUTABLE} ${COMPILER_ASSEMBLY_SCRIPT} --source-dir "${COMPILER_ASM_PATH}" --output-dir "${COMPILER_SPV_PATH}" ${COMPILER_SPV_EXTRA} --verbose
         DEPENDS ${COMPILER_ASSEMBLY_SCRIPT} ${COMPILER_ASM}
+        USES_TERMINAL
         VERBATIM)
+
+add_custom_target(compiler_spirv_binaries DEPENDS ${COMPILER_SPV})
+add_dependencies(${${MODULE_NAME}_OUT} compiler_spirv_binaries)
 
 include(GNUInstallDirs)
 

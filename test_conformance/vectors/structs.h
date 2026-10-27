@@ -56,18 +56,13 @@ typedef struct _bufferStruct
 
 bufferStruct* newBufferStruct(size_t inSize, size_t outSize, clState* pClState);
 
-bufferStruct* destroyBufferStruct(bufferStruct* destroyMe, clState* pClState);
-
-void initContents(bufferStruct* pBufferStruct, clState* pClState,
-                  size_t typeSize, size_t vecWidth);
+bufferStruct* destroyBufferStruct(bufferStruct* destroyMe);
 
 int pushArgs(bufferStruct* pBufferStruct, clState* pClState);
 int retrieveResults(bufferStruct* pBufferStruct, clState* pClState);
 
 int checkCorrectnessStep(bufferStruct* pBufferStruct, clState* pClState,
-                         size_t typeSize, size_t vecWidth);
-// vecSizeIdx indexes into g_arrVecAlignMasks, g_arrVecSizeNames
-// and g_arrVecSizes
+                         size_t vecWidth);
 int checkCorrectnessAlign(bufferStruct* pBufferStruct, clState* pClState,
                           size_t minAlign);
 

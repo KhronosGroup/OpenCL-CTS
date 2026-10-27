@@ -28,6 +28,14 @@ const char *sample_single_param_kernel[] = {
     "}\n"
 };
 
+static const char *sample_read_write_image_kernel_pattern[] = {
+    "__kernel void sample_test( ",
+    " )\n"
+    "{\n"
+    "    int2 coord = (int2)((int)get_global_id(0), (int)get_global_id(1));\n",
+    "\n"
+    "}\n"
+};
 
 const char *sample_read_image_kernel_pattern[] = {
     "__kernel void sample_test( __global float *result, ",
@@ -551,6 +559,160 @@ REGISTER_TEST(min_max_write_image_args)
     return TEST_PASS;
 }
 
+REGISTER_TEST_VERSION(min_max_read_write_image_args, Version(2, 0))
+{
+    cl_float imageData[4 * 4 * 4] = { 0.f };
+    int error;
+    unsigned int maxReadWriteImageArgs = 0;
+    clProgramWrapper program;
+    char rwArgLine[256];
+    const char *rwArgPattern = ", read_write image2d_t img%d";
+    clKernelWrapper kernel;
+    size_t threads[2];
+    cl_image_format imageFormatDesc;
+    size_t maxParameterSize;
+    cl_int eventStatus;
+    const cl_uint minRequiredReadWriteImages = gIsEmbedded ? 8 : 64;
+
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS,
+                            sizeof(maxReadWriteImageArgs),
+                            &maxReadWriteImageArgs, NULL);
+    test_error(error,
+               "Unable to query "
+               "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS");
+
+    if (checkForImageSupport(device))
+    {
+        test_assert_error_ret(maxReadWriteImageArgs == 0,
+                              "Missing image support but "
+                              "CL_DEVICE_MAX_READ_WRITE_IMAGE_ARGS query did "
+                              "not return 0",
+                              TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    imageFormatDesc.image_channel_order = CL_RGBA;
+    imageFormatDesc.image_channel_data_type = CL_FLOAT;
+
+    if (get_device_cl_version(device) >= Version(3, 0)
+        && maxReadWriteImageArgs == 0)
+    {
+        log_info("Device does not support read-write images. Skipping test.\n");
+        return TEST_SKIPPED_ITSELF;
+    }
+
+    if (maxReadWriteImageArgs < minRequiredReadWriteImages)
+    {
+        log_error("ERROR: Reported max read/write image arg count is less than "
+                  "required! (%u)\n",
+                  maxReadWriteImageArgs);
+        return TEST_FAIL;
+    }
+
+    log_info("Reported %u max read-write image args.\n", maxReadWriteImageArgs);
+
+    error = clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE,
+                            sizeof(maxParameterSize), &maxParameterSize, NULL);
+    test_error(error, "Unable to get max parameter size from device");
+
+    // Calculate the number we can use
+    if (maxParameterSize / sizeof(cl_mem) < maxReadWriteImageArgs)
+    {
+        log_info("WARNING: Max parameter size of %d bytes limits test to %d "
+                 "max image arguments.\n",
+                 (int)maxParameterSize,
+                 (int)(maxParameterSize / sizeof(cl_mem)));
+        maxReadWriteImageArgs =
+            (unsigned int)(maxParameterSize / sizeof(cl_mem));
+    }
+
+    /* Create a program with that many read_write args */
+    std::string programSrc = sample_read_write_image_kernel_pattern[0];
+    programSrc += "read_write image2d_t img0";
+    for (unsigned i = 1; i < maxReadWriteImageArgs; i++)
+    {
+        snprintf(rwArgLine, sizeof(rwArgLine), rwArgPattern, i);
+        programSrc += rwArgLine;
+    }
+
+    programSrc += sample_read_write_image_kernel_pattern[1];
+
+    for (unsigned i = 0; i < maxReadWriteImageArgs; i++)
+    {
+        snprintf(
+            rwArgLine, sizeof(rwArgLine),
+            "    {\n"
+            "        float4 v = read_imagef( img%u, coord );\n"
+            "        write_imagef( img%u, coord, v + (float4)(1,0,0,0) );\n"
+            "    }\n",
+            i, i);
+        programSrc += rwArgLine;
+    }
+
+    programSrc += sample_read_write_image_kernel_pattern[2];
+
+    const char *prog_data = programSrc.c_str();
+    error =
+        create_single_kernel_helper(context, &program, &kernel, 1,
+                                    (const char **)&prog_data, "sample_test");
+    test_error(error, "Failed to create the program and kernel.");
+
+    /* Create some I/O streams */
+    std::vector<clMemWrapper> streams(maxReadWriteImageArgs);
+    for (unsigned i = 0; i < maxReadWriteImageArgs; i++)
+    {
+        for (unsigned p = 0; p < 16; p++) imageData[p * 4] = (cl_float)(i + p);
+
+        streams[i] =
+            create_image_2d(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                            &imageFormatDesc, 4, 4, 0, imageData, &error);
+        test_error(error, "Unable to allocate test image");
+
+        error = clSetKernelArg(kernel, i, sizeof(streams[i]), &streams[i]);
+        test_error(error, "Unable to set kernel arguments");
+    }
+
+    /* Now try running the kernel */
+    clEventWrapper event;
+    threads[0] = threads[1] = 4;
+    error = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, threads, NULL, 0,
+                                   NULL, &event);
+    test_error(error, "clEnqueueNDRangeKernel failed");
+
+    // Verify that the event does not return an error from the execution
+    error = clWaitForEvents(1, &event);
+    test_error(error, "clWaitForEvent failed");
+    error = clGetEventInfo(event, CL_EVENT_COMMAND_EXECUTION_STATUS,
+                           sizeof(eventStatus), &eventStatus, NULL);
+    test_error(error,
+               "clGetEventInfo for CL_EVENT_COMMAND_EXECUTION_STATUS failed");
+    test_error(eventStatus, "Kernel execution event returned error");
+
+    // Each pixel of each image should have been incremented in kernel
+    const size_t origin[3] = { 0, 0, 0 };
+    const size_t region[3] = { 4, 4, 1 };
+    for (unsigned i = 0; i < maxReadWriteImageArgs; i++)
+    {
+        cl_float pixels[4 * 4 * 4] = { 0.f };
+        error = clEnqueueReadImage(queue, streams[i], CL_TRUE, origin, region,
+                                   0, 0, pixels, 0, NULL, NULL);
+        test_error(error, "clEnqueueReadImage failed");
+
+        for (unsigned p = 0; p < 16; p++)
+        {
+            const cl_float expected = (cl_float)(i + p) + 1.0f;
+            if (pixels[p * 4] != expected)
+            {
+                log_error("Image %u pixel %u failed to verify. "
+                          "Got %g, expected %g.\n",
+                          i, p, pixels[p * 4], expected);
+                return TEST_FAIL;
+            }
+        }
+    }
+    return TEST_PASS;
+}
+
 REGISTER_TEST(min_max_mem_alloc_size)
 {
     int error;
@@ -564,12 +726,8 @@ REGISTER_TEST(min_max_mem_alloc_size)
     else
         requiredAllocSize = 128 * 1024 * 1024;
 
-    /* Get the max mem alloc size, limit the alloc to half of the available
-     * memory */
-    maxAllocSize = get_device_info_max_mem_alloc_size(
-        device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
-    memSize =
-        get_device_info_global_mem_size(device, MAX_DEVICE_MEMORY_SIZE_DIVISOR);
+    maxAllocSize = get_device_info_max_mem_alloc_size(device);
+    memSize = get_device_info_global_mem_size(device);
 
     if (memSize < maxAllocSize)
     {
@@ -585,7 +743,8 @@ REGISTER_TEST(min_max_mem_alloc_size)
 
     if (maxAllocSize < requiredAllocSize)
     {
-        log_error("ERROR: Reported max allocation size is less than required");
+        log_error(
+            "ERROR: Reported max allocation size is less than required\n");
         return -1;
     }
 
@@ -595,9 +754,10 @@ REGISTER_TEST(min_max_mem_alloc_size)
              maxAllocSize, maxAllocSize / (1024.0 * 1024.0), memSize,
              memSize / (1024.0 * 1024.0));
 
-    minSizeToTry = maxAllocSize / 16;
-    currentSize = maxAllocSize;
-    while (currentSize >= maxAllocSize / MAX_REDUCTION_FACTOR)
+    cl_ulong maxAllocToAttempt = maxAllocSize / MAX_DEVICE_MEMORY_SIZE_DIVISOR;
+    minSizeToTry = maxAllocToAttempt / 16;
+    currentSize = maxAllocToAttempt;
+    while (currentSize >= maxAllocToAttempt / MAX_REDUCTION_FACTOR)
     {
 
         log_info("Trying to create a buffer of size of %" PRIu64
@@ -1479,30 +1639,35 @@ REGISTER_TEST(min_max_samplers)
     cl_uint maxSamplers, i;
     clProgramWrapper program;
     clKernelWrapper kernel;
-    char *programSrc, samplerLine[1024];
+    char samplerLine[1024];
     size_t maxParameterSize;
-    cl_event event;
     cl_int event_status;
     cl_uint minRequiredSamplers = gIsEmbedded ? 8 : 16;
-
-
-    PASSIVE_REQUIRE_IMAGE_SUPPORT(device)
 
     /* Get the max value */
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_SAMPLERS, sizeof(maxSamplers),
                             &maxSamplers, NULL);
     test_error(error, "Unable to get max sampler count from device");
 
+    if (checkForImageSupport(device))
+    {
+        test_assert_error_ret(
+            maxSamplers == 0,
+            "Missing image support but CL_DEVICE_MAX_SAMPLERS query "
+            "did not return 0",
+            TEST_FAIL);
+        return TEST_SKIPPED_ITSELF;
+    }
+
     if (maxSamplers < minRequiredSamplers)
     {
         log_error(
             "ERROR: Reported max sampler count is less than required! (%d)\n",
             (int)maxSamplers);
-        return -1;
+        return TEST_FAIL;
     }
 
     log_info("Reported max %d samplers.\n", maxSamplers);
-
     error = clGetDeviceInfo(device, CL_DEVICE_MAX_PARAMETER_SIZE,
                             sizeof(maxParameterSize), &maxParameterSize, NULL);
     test_error(error, "Unable to get max parameter size from device");
@@ -1521,37 +1686,31 @@ REGISTER_TEST(min_max_samplers)
     }
 
     /* Create a kernel to test with */
-    programSrc = (char *)malloc(
-        (strlen(sample_sampler_kernel_pattern[1]) + 8) * (maxSamplers)
-        + strlen(sample_sampler_kernel_pattern[0])
-        + strlen(sample_sampler_kernel_pattern[2])
-        + (strlen(sample_sampler_kernel_pattern[3]) + 8) * maxSamplers
-        + strlen(sample_sampler_kernel_pattern[4]));
-    strcpy(programSrc, sample_sampler_kernel_pattern[0]);
+    std::string programSrc = sample_sampler_kernel_pattern[0];
     for (i = 0; i < maxSamplers; i++)
     {
-        sprintf(samplerLine, sample_sampler_kernel_pattern[1], i);
-        strcat(programSrc, samplerLine);
+        snprintf(samplerLine, sizeof(samplerLine),
+                 sample_sampler_kernel_pattern[1], i);
+        programSrc += samplerLine;
     }
-    strcat(programSrc, sample_sampler_kernel_pattern[2]);
+
+    programSrc += sample_sampler_kernel_pattern[2];
+
     for (i = 0; i < maxSamplers; i++)
     {
-        sprintf(samplerLine, sample_sampler_kernel_pattern[3], i);
-        strcat(programSrc, samplerLine);
+        snprintf(samplerLine, sizeof(samplerLine),
+                 sample_sampler_kernel_pattern[3], i);
+        programSrc += samplerLine;
     }
-    strcat(programSrc, sample_sampler_kernel_pattern[4]);
 
-
-    error =
-        create_single_kernel_helper(context, &program, &kernel, 1,
-                                    (const char **)&programSrc, "sample_test");
+    programSrc += sample_sampler_kernel_pattern[4];
+    const char *src = programSrc.c_str();
+    error = create_single_kernel_helper(context, &program, &kernel, 1, &src,
+                                        "sample_test");
     test_error(error, "Failed to create the program and kernel.");
 
-    // We have to set up some fake parameters so it'll work
-    clSamplerWrapper *samplers = new clSamplerWrapper[maxSamplers];
-
+    std::vector<clSamplerWrapper> samplers(maxSamplers);
     cl_image_format format = { CL_RGBA, CL_SIGNED_INT8 };
-
     clMemWrapper image = create_image_2d(context, CL_MEM_READ_WRITE, &format,
                                          16, 16, 0, NULL, &error);
     test_error(error, "Unable to create a test image");
@@ -1573,6 +1732,7 @@ REGISTER_TEST(min_max_samplers)
         test_error(error, "Unable to set sampler argument");
     }
 
+    clEventWrapper event;
     size_t globalDim[3] = { 1, 1, 1 }, localDim[3] = { 1, 1, 1 };
     error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, globalDim, localDim,
                                    0, NULL, &event);
@@ -1587,13 +1747,10 @@ REGISTER_TEST(min_max_samplers)
                            sizeof(event_status), &event_status, NULL);
     test_error(error,
                "clGetEventInfo for CL_EVENT_COMMAND_EXECUTION_STATUS failed");
-    clReleaseEvent(event);
     if (event_status < 0)
-        test_error(error, "Kernel execution event returned error");
+        test_error(event_status, "Kernel execution event returned error");
 
-    free(programSrc);
-    delete[] samplers;
-    return 0;
+    return TEST_PASS;
 }
 
 REGISTER_TEST(min_max_constant_buffer_size)

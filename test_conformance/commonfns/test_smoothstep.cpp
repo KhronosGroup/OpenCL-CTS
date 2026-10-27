@@ -76,6 +76,15 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
             else if (t > 1.0)
                 t = 1.0;
             r = t * t * (3.0 - 2.0 * t);
+            if (r == 0.0 && !fp_value_equals(r, outptr[i]))
+            {
+                log_error(
+                    "%d) verification error: smoothstep(%a, %a, %a) = *%a "
+                    "vs. %a\n",
+                    i, conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
+                    conv_to_flt(x[i]), r, conv_to_flt(outptr[i]));
+                return -1;
+            }
             delta = (float)fabs(r - conv_to_dbl(outptr[i]));
             if (!std::is_same<T, half>::value)
             {
@@ -84,8 +93,8 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                     log_error(
                         "%d) verification error: smoothstep(%a, %a, %a) = "
                         "*%a vs. %a\n",
-                        i, conv_to_flt(x[i]), conv_to_flt(edge0[i]),
-                        conv_to_flt(edge1[i]), r, conv_to_flt(outptr[i]));
+                        i, conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
+                        conv_to_flt(x[i]), r, conv_to_flt(outptr[i]));
                     return -1;
                 }
             }
@@ -108,6 +117,15 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                 else if (t > 1.0)
                     t = 1.0;
                 r = t * t * (3.0 - 2.0 * t);
+                if (r == 0.0 && !fp_value_equals(r, outptr[vi]))
+                {
+                    log_error("{%d, element %d}) verification error: "
+                              "smoothstep(%a, %a, %a) = *%a vs. %a\n",
+                              ii, j, conv_to_flt(edge0[i]),
+                              conv_to_flt(edge1[i]), conv_to_flt(x[vi]), r,
+                              conv_to_flt(outptr[vi]));
+                    return -1;
+                }
                 delta = (float)fabs(r - conv_to_dbl(outptr[vi]));
 
                 if (!std::is_same<T, half>::value)
@@ -116,9 +134,9 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                     {
                         log_error("{%d, element %d}) verification error: "
                                   "smoothstep(%a, %a, %a) = *%a vs. %a\n",
-                                  ii, j, conv_to_flt(x[vi]),
-                                  conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
-                                  r, conv_to_flt(outptr[vi]));
+                                  ii, j, conv_to_flt(edge0[i]),
+                                  conv_to_flt(edge1[i]), conv_to_flt(x[vi]), r,
+                                  conv_to_flt(outptr[vi]));
                         return -1;
                     }
                 }

@@ -21,8 +21,6 @@
 #include <sstream>
 #include <string>
 
-extern bool gVersionSkip;
-
 REGISTER_TEST(basic_versions)
 {
     cl_int error = CL_SUCCESS;
