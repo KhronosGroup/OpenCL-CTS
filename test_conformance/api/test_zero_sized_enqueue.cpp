@@ -229,7 +229,7 @@ REGISTER_TEST_VERSION(zero_sized_enqueue, Version(2, 1))
         CL_QUEUE_PROPERTIES, CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, 0
     };
 
-    int error;
+    cl_int error;
     clCommandQueueWrapper ooqueue = clCreateCommandQueueWithProperties(
         context, device, queue_prop_def, &error);
     test_error(error, "clCreateCommandQueueWithProperties failed.");

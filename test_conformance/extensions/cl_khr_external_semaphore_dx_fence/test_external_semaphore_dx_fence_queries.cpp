@@ -16,13 +16,13 @@
 
 #include "semaphore_dx_fence_base.h"
 
-#ifdef D3D12_IS_SUPPORTED
 struct DXFenceQueryProperties final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t properties_size_bytes = 0;
         errcode = clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_PROPERTIES_KHR,
                                         0, nullptr, &properties_size_bytes);
@@ -46,19 +46,15 @@ struct DXFenceQueryProperties final : DXFenceTestBase
         }
         log_error("Failed to find the dx fence handle type in the semaphore "
                   "properties");
+#endif
         return TEST_FAIL;
     }
 };
-#endif
 
 // Confirm that the CL_SEMAPHORE_HANDLE_D3D12_FENCE_KHR property is in the
 // properties returned by clGetSemaphoreInfo
 REGISTER_TEST(test_external_semaphores_dx_fence_query_properties)
 {
-#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<DXFenceQueryProperties>(device, context, queue,
                                                   num_elements);
-#else
-    return TEST_SKIPPED_ITSELF;
-#endif
 }

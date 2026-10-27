@@ -16,13 +16,13 @@
 
 #include "semaphore_dx_fence_base.h"
 
-#ifdef D3D12_IS_SUPPORTED
 struct DXFenceNegativeWait final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         log_info("Calling clEnqueueWaitSemaphoresKHR\n");
         errcode = clEnqueueWaitSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
                                              nullptr, nullptr);
@@ -31,29 +31,27 @@ struct DXFenceNegativeWait final : DXFenceTestBase
             "Unexpected error code returned from clEnqueueWaitSemaphores");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
-#endif
 
 // Confirm that a wait without a semaphore payload list will return
 // CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_wait)
 {
-#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<DXFenceNegativeWait>(device, context, queue,
                                                num_elements);
-#else
-    return TEST_SKIPPED_ITSELF;
-#endif
 }
 
-#ifdef D3D12_IS_SUPPORTED
 struct DXFenceNegativeSignal final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         log_info("Calling clEnqueueWaitSemaphoresKHR\n");
         errcode = clEnqueueSignalSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
                                                nullptr, nullptr);
@@ -62,18 +60,16 @@ struct DXFenceNegativeSignal final : DXFenceTestBase
             "Unexpected error code returned from clEnqueueSignalSemaphores");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
-#endif
 
 // Confirm that a signal without a semaphore payload list will return
 // CL_INVALID_VALUE
 REGISTER_TEST(test_external_semaphores_dx_fence_negative_signal)
 {
-#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<DXFenceNegativeSignal>(device, context, queue,
                                                  num_elements);
-#else
-    return TEST_SKIPPED_ITSELF;
-#endif
 }

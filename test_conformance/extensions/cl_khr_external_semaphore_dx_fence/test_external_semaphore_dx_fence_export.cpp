@@ -16,13 +16,13 @@
 
 #include "semaphore_dx_fence_base.h"
 
-#ifdef D3D12_IS_SUPPORTED
 struct ExportDXSignal final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t export_types_size = 0;
         errcode =
             clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
@@ -102,28 +102,26 @@ struct ExportDXSignal final : DXFenceTestBase
         exported_fence->Release();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
-#endif
 
 // Confirm that a wait followed by a signal in DirectX 12 using an exported
 // semaphore will complete successfully
 REGISTER_TEST(test_external_semaphores_export_dx_signal)
 {
-#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<ExportDXSignal>(device, context, queue, num_elements);
-#else
-    return TEST_SKIPPED_ITSELF;
-#endif
 }
 
-#ifdef D3D12_IS_SUPPORTED
 struct ExportDXWait final : DXFenceTestBase
 {
     using DXFenceTestBase::DXFenceTestBase;
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t export_types_size = 0;
         errcode =
             clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
@@ -216,17 +214,15 @@ struct ExportDXWait final : DXFenceTestBase
         exported_fence->Release();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
-#endif
 
 // Confirm that a signal in OpenCL followed by a wait in DirectX 12 using an
 // exported semaphore will complete successfully
 REGISTER_TEST(test_external_semaphores_export_dx_wait)
 {
-#ifdef D3D12_IS_SUPPORTED
     return MakeAndRunTest<ExportDXWait>(device, context, queue, num_elements);
-#else
-    return TEST_SKIPPED_ITSELF;
-#endif
 }
