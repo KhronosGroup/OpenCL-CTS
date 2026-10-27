@@ -15,14 +15,30 @@
 //
 #include "common.h"
 
-const std::vector<cl_channel_type> channel_types = {
-    CL_SNORM_INT8,         CL_SNORM_INT16,     CL_UNORM_INT8,
-    CL_UNORM_INT16,        CL_UNORM_SHORT_565, CL_UNORM_SHORT_555,
-    CL_UNORM_INT_101010,   CL_SIGNED_INT8,     CL_SIGNED_INT16,
-    CL_SIGNED_INT32,       CL_UNSIGNED_INT8,   CL_UNSIGNED_INT16,
-    CL_UNSIGNED_INT32,     CL_HALF_FLOAT,      CL_FLOAT,
-    CL_UNORM_INT_101010_2,
-};
+const std::vector<cl_channel_type> channel_types = { CL_SNORM_INT8,
+                                                     CL_SNORM_INT16,
+                                                     CL_UNORM_INT8,
+                                                     CL_UNORM_INT16,
+                                                     CL_UNORM_SHORT_565,
+                                                     CL_UNORM_SHORT_555,
+                                                     CL_UNORM_INT_101010,
+                                                     CL_SIGNED_INT8,
+                                                     CL_SIGNED_INT16,
+                                                     CL_SIGNED_INT32,
+                                                     CL_UNSIGNED_INT8,
+                                                     CL_UNSIGNED_INT16,
+                                                     CL_UNSIGNED_INT32,
+                                                     CL_HALF_FLOAT,
+                                                     CL_FLOAT,
+                                                     CL_UNORM_INT_101010_2,
+                                                     CL_UNORM_INT_2_101010_EXT,
+                                                     CL_UNORM_INT10X6_EXT,
+                                                     CL_UNORM_INT12X4_EXT,
+                                                     CL_UNORM_INT14X2_EXT,
+                                                     CL_UNSIGNED_INT10X6_EXT,
+                                                     CL_UNSIGNED_INT12X4_EXT,
+                                                     CL_UNSIGNED_INT14X2_EXT,
+                                                     CL_UNORM_INT24 };
 
 cl_channel_type floatFormats[] = {
     CL_UNORM_SHORT_565,
@@ -37,6 +53,7 @@ cl_channel_type floatFormats[] = {
     CL_SNORM_INT8,
     CL_UNORM_INT16,
     CL_SNORM_INT16,
+    CL_UNORM_INT24,
     CL_FLOAT,
     CL_HALF_FLOAT,
     CL_UNORM_INT10X6_EXT,
