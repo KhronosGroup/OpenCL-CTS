@@ -18,6 +18,7 @@
           "min_max_samplers": "pass",
           "min_max_write_image_args": "pass",
           "negative_enqueue_zero_work_group": "pass",
+          "negative_enqueue_work_group_size_exceeded": "pass",
           "negative_set_kernel_arg_invalid_image_msaa": "skip",
           "negative_set_kernel_arg_invalid_image": "pass",
           "set_kernel_arg_struct_array": "pass"
