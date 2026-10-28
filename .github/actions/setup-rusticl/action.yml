@@ -61,8 +61,8 @@ runs:
         fi
         export PATH="$HOME/.cargo/bin:$PATH"
 
-        if ! command -v bindgen &> /dev/null || [[ "$(bindgen --version 2>&1)" != *"0.71.1"* ]]; then
-          cargo install bindgen-cli --version 0.71.1 --force
+        if ! command -v bindgen &> /dev/null || [[ "$(bindgen --version 2>&1)" != *"0.72.1"* ]]; then
+          cargo install bindgen-cli --version 0.72.1 --locked --force
         fi
 
     - name: Install mesa-libclc
