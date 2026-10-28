@@ -14,6 +14,8 @@
 // limitations under the License.
 //
 #include "testBase.h"
+#include "testHarness.h"
+#ifdef GL_IS_SUPPORTED
 #include "common.h"
 
 #if defined(__APPLE__)
@@ -22,9 +24,11 @@
 #include <GL/glu.h>
 #include <CL/cl_gl.h>
 #endif
+#endif
 #include <algorithm>
 
-void calc_2D_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
+#ifdef GL_IS_SUPPORTED
+static void calc_2D_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     // Need to limit texture size according to GL device properties
@@ -46,7 +50,7 @@ void calc_2D_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
     }
 }
 
-void calc_cube_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
+static void calc_cube_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
 {
     // Need to limit array size according to GL device properties
     // Need to limit texture size according to GL device properties
@@ -63,10 +67,12 @@ void calc_cube_test_size_descriptors(sizevec_t* sizes, size_t nsizes)
         sizes[i].depth = 1;
     }
 }
+#endif
 
 int test_images_read_2D(cl_device_id device, cl_context context,
                         cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_EXT };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
 
@@ -78,11 +84,15 @@ int test_images_read_2D(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_read_cube(cl_device_id device, cl_context context,
                           cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = {
         GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
         GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -98,16 +108,18 @@ int test_images_read_cube(cl_device_id device, cl_context context,
 
     return test_images_read_common(device, context, queue, common_formats,
                                    nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 #pragma mark -
 #pragma mark _2D write tests
 
-#include "common.h"
-
 int test_images_write(cl_device_id device, cl_context context,
                       cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_EXT };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
@@ -118,11 +130,15 @@ int test_images_write(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_write_cube(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     size_t nformats = sizeof(common_formats) / sizeof(common_formats[0]);
 
     GLenum targets[] = {
@@ -138,6 +154,9 @@ int test_images_write_cube(cl_device_id device, cl_context context,
 
     return test_images_write_common(device, context, queue, common_formats,
                                     nformats, targets, ntargets, sizes, nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 #pragma mark -
@@ -146,6 +165,7 @@ int test_images_write_cube(cl_device_id device, cl_context context,
 int test_images_2D_getinfo(cl_device_id device, cl_context context,
                            cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = { GL_TEXTURE_2D, GL_TEXTURE_RECTANGLE_EXT };
     size_t ntargets = sizeof(targets) / sizeof(targets[0]);
 
@@ -158,11 +178,15 @@ int test_images_2D_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 int test_images_cube_getinfo(cl_device_id device, cl_context context,
                              cl_command_queue queue, int numElements)
 {
+#ifdef GL_IS_SUPPORTED
     GLenum targets[] = {
         GL_TEXTURE_CUBE_MAP_POSITIVE_X, GL_TEXTURE_CUBE_MAP_POSITIVE_Y,
         GL_TEXTURE_CUBE_MAP_POSITIVE_Z, GL_TEXTURE_CUBE_MAP_NEGATIVE_X,
@@ -178,4 +202,7 @@ int test_images_cube_getinfo(cl_device_id device, cl_context context,
     return test_images_get_info_common(device, context, queue, common_formats,
                                        nformats, targets, ntargets, sizes,
                                        nsizes);
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
