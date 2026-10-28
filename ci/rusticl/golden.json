@@ -1,7 +1,8 @@
 {
     "test_api": {
         "": {
-            "enqueue_task": "pass"
+            "enqueue_task": "pass",
+            "negative_enqueue_invalid_work_dim": "pass"
         }
     },
     "test_computeinfo": {
