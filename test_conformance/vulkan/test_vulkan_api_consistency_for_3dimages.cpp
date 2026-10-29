@@ -181,7 +181,9 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
         test_error(errNum, "Unable to create Image with Properties");
         image.reset();
 
-        if(vkExternalMemoryHandleType == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD){
+        if (vkExternalMemoryHandleType
+            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
+        {
             extMemProperties[extMemProperties.size() - 2] = fd2;
         }
         // Passing image_format as NULL
@@ -195,7 +197,9 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
 
         image.reset();
 
-        if(vkExternalMemoryHandleType == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD){
+        if (vkExternalMemoryHandleType
+            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
+        {
             extMemProperties[extMemProperties.size() - 2] = fd3;
         }
         // Passing image_desc as NULL
