@@ -6,13 +6,17 @@ permissions:
   pull-requests: read
 
 env:
-  DRIVERS: "pocl rusticl"
+  DRIVERS: "pocl rusticl clvk"
   POCL_VERSION: v7.2
   POCL_LLVM_VERSION: 22
   POCL_TRANSLATOR_BRANCH: llvm_release_220
   RUSTICL_VERSION: mesa-26.2.2
   RUSTICL_LLVM_VERSION: 20
   RUSTICL_TRANSLATOR_BRANCH: llvm_release_200
+  CLVK_VERSION: 87d6dd3c55db4299b6e364bb8d41ba00d6eda7d7
+  CLVK_CLSPV_VERSION: a3d3e2617795170494e5ded1cee47aa533f63cff
+  CLVK_MESA_VERSION: mesa-26.2.2
+  CLVK_MESA_LLVM_VERSION: 22
   VULKAN_SDK_VERSION: 1.4.309.0
 
 jobs:
@@ -99,6 +103,12 @@ jobs:
         with:
           runtime: false
 
+      - name: Setup clvk
+        if: matrix.driver == 'clvk'
+        uses: ./.github/actions/setup-clvk
+        with:
+          runtime: false
+
   run:
     name: Run Tests (${{ matrix.driver }})
     runs-on: ubuntu-24.04
@@ -119,6 +129,10 @@ jobs:
       - name: Setup Rusticl
         if: matrix.driver == 'rusticl'
         uses: ./.github/actions/setup-rusticl
+
+      - name: Setup clvk
+        if: matrix.driver == 'clvk'
+        uses: ./.github/actions/setup-clvk
 
       - name: Build OpenCL-CTS
         uses: ./.github/actions/build-cts
