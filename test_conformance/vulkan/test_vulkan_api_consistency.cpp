@@ -32,10 +32,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -92,7 +88,7 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
         vkDeviceMem->bindBuffer(vkBufferList[0], 0);
 
         [[maybe_unused]] void* handle = NULL;
-        [[maybe_unused]] int fd1, fd2;
+        [[maybe_unused]] int fd;
 
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
@@ -119,12 +115,11 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
                 break;
 #else
             case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-                fd1 = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-                fd2 = dup(fd1);
+                fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
                 type = CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR;
                 errNum = check_external_memory_handle_type(device, type);
                 extMemProperties.push_back((cl_mem_properties)type);
-                extMemProperties.push_back((cl_mem_properties)fd1);
+                extMemProperties.push_back((cl_mem_properties)fd);
                 break;
 #endif
             default:
@@ -149,13 +144,6 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         buffer.reset();
 
-        // Passing valid extMemProperties and buffersize
-        buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
-                                              1, bufferSize, NULL, &errNum);
-        test_error(errNum, "Unable to create buffer with Properties");
-
-        buffer.reset();
-
         // Not passing external memory handle
         std::vector<cl_mem_properties> extMemProperties2{
 #ifdef _WIN32
@@ -177,18 +165,19 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         buffer.reset();
 
-        if (vkExternalMemoryHandleType
-            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
-        {
-            extMemProperties[extMemProperties.size() - 2] = fd2;
-        }
-
         // Passing extMem_desc size = 0 but valid memProperties, CL_INVALID_SIZE
         // should be returned.
         buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
                                               1, 0, NULL, &errNum);
         test_failure_error(errNum, CL_INVALID_BUFFER_SIZE,
                            "Should return CL_INVALID_BUFFER_SIZE");
+
+        buffer.reset();
+
+        // Passing valid extMemProperties and buffersize
+        buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
+                                              1, bufferSize, NULL, &errNum);
+        test_error(errNum, "Unable to create buffer with Properties");
 
         return TEST_PASS;
     }
@@ -258,7 +247,7 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
         vkDeviceMem->bindImage(vkImage2D, 0);
 
         [[maybe_unused]] void* handle = NULL;
-        [[maybe_unused]] int fd1, fd2, fd3;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,
@@ -287,14 +276,12 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
                 break;
 #else
             case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-                fd1 = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-                fd2 = dup(fd1);
-                fd3 = dup(fd1);
+                fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
                 errNum = check_external_memory_handle_type(
                     device, CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
                 extMemProperties.push_back(
                     (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-                extMemProperties.push_back((cl_mem_properties)fd1);
+                extMemProperties.push_back((cl_mem_properties)fd);
                 break;
 #endif
             default:
@@ -322,18 +309,6 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 
         clMemWrapper image;
 
-        // Pass valid properties, image_desc and image_format
-        image = clCreateImageWithProperties(
-            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
-            &image_desc, NULL /* host_ptr */, &errNum);
-        test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
-        if (vkExternalMemoryHandleType
-            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
-        {
-            extMemProperties[extMemProperties.size() - 2] = fd2;
-        }
         // Passing image_format as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, NULL,
@@ -345,11 +320,6 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 
         image.reset();
 
-        if (vkExternalMemoryHandleType
-            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
-        {
-            extMemProperties[extMemProperties.size() - 2] = fd3;
-        }
         // Passing image_desc as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, &img_format,
@@ -359,6 +329,12 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
                            "CL_INVALID_IMAGE_DESCRIPTOR "
                            "when image desc passed as NULL");
         image.reset();
+
+        // Pass valid properties, image_desc and image_format
+        image = clCreateImageWithProperties(
+            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
+            &image_desc, NULL /* host_ptr */, &errNum);
+        test_error(errNum, "Unable to create Image with Properties");
 
         return TEST_PASS;
     }

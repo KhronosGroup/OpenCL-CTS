@@ -31,10 +31,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-#if !defined(_WIN32)
-#include <unistd.h>
-#endif
-
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -108,7 +104,7 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
         vkDeviceMem->bindImage(vkImage1D, 0);
 
         [[maybe_unused]] void* handle = NULL;
-        [[maybe_unused]] int fd1, fd2, fd3;
+        [[maybe_unused]] int fd;
         std::vector<cl_mem_properties> extMemProperties{
             (cl_mem_properties)CL_MEM_DEVICE_HANDLE_LIST_KHR,
             (cl_mem_properties)device,
@@ -137,14 +133,12 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
                 break;
 #else
             case VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD:
-                fd1 = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
-                fd2 = dup(fd1);
-                fd3 = dup(fd1);
+                fd = (int)vkDeviceMem->getHandle(vkExternalMemoryHandleType);
                 errNum = check_external_memory_handle_type(
                     device, CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
                 extMemProperties.push_back(
                     (cl_mem_properties)CL_EXTERNAL_MEMORY_HANDLE_OPAQUE_FD_KHR);
-                extMemProperties.push_back((cl_mem_properties)fd1);
+                extMemProperties.push_back((cl_mem_properties)fd);
                 break;
 #endif
             default:
@@ -172,19 +166,6 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 
         clMemWrapper image;
 
-        // Pass valid properties, image_desc and image_format
-        image = clCreateImageWithProperties(
-            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
-            &image_desc, NULL /* host_ptr */, &errNum);
-        test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
-        if (vkExternalMemoryHandleType
-            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
-        {
-            extMemProperties[extMemProperties.size() - 2] = fd2;
-        }
-
         // Passing image_format as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, NULL,
@@ -196,11 +177,6 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
 
         image.reset();
 
-        if (vkExternalMemoryHandleType
-            == VULKAN_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD)
-        {
-            extMemProperties[extMemProperties.size() - 2] = fd3;
-        }
         // Passing image_desc as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, &img_format,
@@ -210,6 +186,12 @@ struct ConsistencyExternalImage1DTest : public VulkanTestBase
                            "CL_INVALID_IMAGE_DESCRIPTOR "
                            "when image desc passed as NULL");
         image.reset();
+
+        // Pass valid properties, image_desc and image_format
+        image = clCreateImageWithProperties(
+            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
+            &image_desc, NULL /* host_ptr */, &errNum);
+        test_error(errNum, "Unable to create Image with Properties");
 
         return TEST_PASS;
     }
