@@ -336,7 +336,12 @@
     "test_relationals": {
         "": {
             "relational_all": "pass",
-            "relational_any": "pass"
+            "relational_any": "pass",
+            "shuffle_copy": "pass",
+            "shuffle_function_call": "pass",
+            "shuffle_array_cast": "pass",
+            "shuffle_built_in": "pass",
+            "shuffle_built_in_dual_input": "pass"
         }
     },
     "test_select": {
