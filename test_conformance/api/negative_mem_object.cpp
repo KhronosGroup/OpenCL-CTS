@@ -112,66 +112,107 @@ cl_int getSupportedFormats(cl_context context, cl_mem_flags base,
     return CL_SUCCESS;
 }
 
+int test_create_buffer(cl_context context, bool with_props)
+{
+    const char *api_name =
+        with_props ? "clCreateBufferWithProperties" : "clCreateBuffer";
+
+    std::vector<cl_uchar> host_data(host_data_size);
+
+    for (cl_mem_flags base : base_flags)
+    {
+        cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
+        void *host_ptr = (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
+            ? host_data.data()
+            : nullptr;
+
+        cl_int error = CL_SUCCESS;
+        clMemWrapper buffer = with_props
+            ? clCreateBufferWithProperties(context, nullptr, flags,
+                                           host_data_size, host_ptr, &error)
+            : clCreateBuffer(context, flags, host_data_size, host_ptr, &error);
+
+        if (error != CL_INVALID_VALUE || buffer != nullptr)
+        {
+            log_error("%s(flags: 0x%llx) with CL_MEM_KERNEL_READ_AND_WRITE, "
+                      "expected CL_INVALID_VALUE, got %s\n",
+                      api_name, (unsigned long long)flags,
+                      IGetErrorString(error));
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+}
+
+int test_create_image(cl_context context, bool with_props)
+{
+    const char *api_name =
+        with_props ? "clCreateImageWithProperties" : "clCreateImage";
+
+    cl_int error = CL_SUCCESS;
+    std::vector<cl_uchar> host_data(host_data_size);
+    std::vector<cl_image_format> formats;
+
+    for (cl_mem_object_type type : image_types)
+    {
+        clMemWrapper image_buffer;
+        cl_image_desc desc;
+        error = setupImageDesc(context, type, desc, image_buffer);
+        test_error(error, "setupImageDesc failed");
+
+        for (cl_mem_flags base : base_flags)
+        {
+            // skip host_ptr cases when an image was created from a buffer
+            if (type == CL_MEM_OBJECT_IMAGE1D_BUFFER && (base & host_ptr_mask))
+                continue;
+
+            error = getSupportedFormats(context, base, type, formats);
+            test_error(error, "getSupportedFormats failed");
+            if (formats.empty()) continue;
+
+            cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
+            void *host_ptr =
+                (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
+                ? host_data.data()
+                : nullptr;
+
+            clMemWrapper image = with_props
+                ? clCreateImageWithProperties(context, nullptr, flags,
+                                              &formats[0], &desc, host_ptr,
+                                              &error)
+                : clCreateImage(context, flags, &formats[0], &desc, host_ptr,
+                                &error);
+
+            if (error != CL_INVALID_VALUE || image != nullptr)
+            {
+                log_error("%s(%s, flags: 0x%llx) with "
+                          "CL_MEM_KERNEL_READ_AND_WRITE, expected "
+                          "CL_INVALID_VALUE, got %s\n",
+                          api_name, convert_image_type_to_string(type),
+                          (unsigned long long)flags, IGetErrorString(error));
+                return TEST_FAIL;
+            }
+        }
+    }
+
+    return TEST_PASS;
+}
+
 }
 
 // clCreateBuffer must reject CL_MEM_KERNEL_READ_AND_WRITE with
 // CL_INVALID_VALUE.
 REGISTER_TEST(negative_create_buffer)
 {
-    std::vector<cl_uchar> host_data(host_data_size);
-
-    for (cl_mem_flags base : base_flags)
-    {
-        cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
-        cl_int error = CL_SUCCESS;
-        clMemWrapper buffer = clCreateBuffer(
-            context, flags, host_data_size,
-            (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
-                ? host_data.data()
-                : nullptr,
-            &error);
-
-        if (error != CL_INVALID_VALUE)
-        {
-            log_error("clCreateBuffer(flags: 0x%llx) with "
-                      "CL_MEM_KERNEL_READ_AND_WRITE, expected "
-                      "CL_INVALID_VALUE, got %s\n",
-                      (unsigned long long)flags, IGetErrorString(error));
-            return TEST_FAIL;
-        }
-    }
-
-    return TEST_PASS;
+    return test_create_buffer(context, false);
 }
 
 // clCreateBufferWithProperties must reject CL_MEM_KERNEL_READ_AND_WRITE with
 // CL_INVALID_VALUE.
 REGISTER_TEST_VERSION(negative_create_buffer_with_properties, Version(3, 0))
 {
-    std::vector<cl_uchar> host_data(host_data_size);
-
-    for (cl_mem_flags base : base_flags)
-    {
-        cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
-        cl_int error = CL_SUCCESS;
-        clMemWrapper buffer = clCreateBufferWithProperties(
-            context, nullptr, flags, host_data_size,
-            (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
-                ? host_data.data()
-                : nullptr,
-            &error);
-
-        if (error != CL_INVALID_VALUE)
-        {
-            log_error("clCreateBufferWithProperties(flags: 0x%llx) with "
-                      "CL_MEM_KERNEL_READ_AND_WRITE, expected "
-                      "CL_INVALID_VALUE, got %s\n",
-                      (unsigned long long)flags, IGetErrorString(error));
-            return TEST_FAIL;
-        }
-    }
-
-    return TEST_PASS;
+    return test_create_buffer(context, true);
 }
 
 // clCreateImage must reject CL_MEM_KERNEL_READ_AND_WRITE with
@@ -180,48 +221,7 @@ REGISTER_TEST(negative_create_image)
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
 
-    cl_int error = CL_SUCCESS;
-    std::vector<cl_uchar> host_data(host_data_size);
-    std::vector<cl_image_format> formats;
-
-    for (cl_mem_object_type type : image_types)
-    {
-        clMemWrapper image_buffer;
-        cl_image_desc desc;
-        error = setupImageDesc(context, type, desc, image_buffer);
-        test_error(error, "setupImageDesc failed");
-
-        for (cl_mem_flags base : base_flags)
-        {
-            // skip host_ptr cases when an image was created from a buffer
-            if (type == CL_MEM_OBJECT_IMAGE1D_BUFFER && (base & host_ptr_mask))
-                continue;
-
-            error = getSupportedFormats(context, base, type, formats);
-            test_error(error, "getSupportedFormats failed");
-            if (formats.empty()) continue;
-
-            cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
-            clMemWrapper image = clCreateImage(
-                context, flags, &formats[0], &desc,
-                (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
-                    ? host_data.data()
-                    : nullptr,
-                &error);
-
-            if (error != CL_INVALID_VALUE)
-            {
-                log_error("clCreateImage(%s, flags: 0x%llx) with "
-                          "CL_MEM_KERNEL_READ_AND_WRITE, expected "
-                          "CL_INVALID_VALUE, got %s\n",
-                          convert_image_type_to_string(type),
-                          (unsigned long long)flags, IGetErrorString(error));
-                return TEST_FAIL;
-            }
-        }
-    }
-
-    return TEST_PASS;
+    return test_create_image(context, false);
 }
 
 // clCreateImageWithProperties must reject CL_MEM_KERNEL_READ_AND_WRITE with
@@ -230,46 +230,5 @@ REGISTER_TEST_VERSION(negative_create_image_with_properties, Version(3, 0))
 {
     PASSIVE_REQUIRE_IMAGE_SUPPORT(device);
 
-    cl_int error = CL_SUCCESS;
-    std::vector<cl_uchar> host_data(host_data_size);
-    std::vector<cl_image_format> formats;
-
-    for (cl_mem_object_type type : image_types)
-    {
-        clMemWrapper image_buffer;
-        cl_image_desc desc;
-        error = setupImageDesc(context, type, desc, image_buffer);
-        test_error(error, "setupImageDesc failed");
-
-        for (cl_mem_flags base : base_flags)
-        {
-            // skip host_ptr cases when an image was created from a buffer
-            if (type == CL_MEM_OBJECT_IMAGE1D_BUFFER && (base & host_ptr_mask))
-                continue;
-
-            error = getSupportedFormats(context, base, type, formats);
-            test_error(error, "getSupportedFormats failed");
-            if (formats.empty()) continue;
-
-            cl_mem_flags flags = base | CL_MEM_KERNEL_READ_AND_WRITE;
-            clMemWrapper image = clCreateImageWithProperties(
-                context, nullptr, flags, &formats[0], &desc,
-                (flags & (CL_MEM_USE_HOST_PTR | CL_MEM_COPY_HOST_PTR))
-                    ? host_data.data()
-                    : nullptr,
-                &error);
-
-            if (error != CL_INVALID_VALUE)
-            {
-                log_error("clCreateImageWithProperties(%s, flags: 0x%llx) with "
-                          "CL_MEM_KERNEL_READ_AND_WRITE, expected "
-                          "CL_INVALID_VALUE, got %s\n",
-                          convert_image_type_to_string(type),
-                          (unsigned long long)flags, IGetErrorString(error));
-                return TEST_FAIL;
-            }
-        }
-    }
-
-    return TEST_PASS;
+    return test_create_image(context, true);
 }
