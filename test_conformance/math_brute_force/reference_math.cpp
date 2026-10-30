@@ -2242,11 +2242,11 @@ long double __polevll(long double x, void *PP, int n)
     return (y);
 }
 
-/* Gamma function computed by Stirling's formula.
+/* Correction factor of Stirling's series, shared by stirf and rstirf.
  */
-static long double stirf(long double x)
+static long double stirf_series(long double x)
 {
-    long double y, w, v;
+    long double w;
 
     w = 1.0L / x;
     /* For large x, use rational coefficients from the analytical expansion.  */
@@ -2264,6 +2264,16 @@ static long double stirf(long double x)
             + 1.0L;
     else
         w = 1.0L + w * __polevll(w, STIR, 8);
+    return (w);
+}
+
+/* Gamma function computed by Stirling's formula.
+ */
+static long double stirf(long double x)
+{
+    long double y, w, v;
+
+    w = stirf_series(x);
     y = expl(x);
     if (x > MAXSTIR)
     { /* Avoid overflow in pow() */
@@ -2286,21 +2296,7 @@ static long double rstirf(long double x, long double scale)
 
     ey = expl(x);
     if (!isfinite(ey)) return (0.0L);
-    w = 1.0L / x;
-    if (x > 1024.0L)
-        w = (((((6.97281375836585777429E-5L * w + 7.84039221720066627474E-4L)
-                    * w
-                - 2.29472093621399176955E-4L)
-                   * w
-               - 2.68132716049382716049E-3L)
-                  * w
-              + 3.47222222222222222222E-3L)
-                 * w
-             + 8.33333333333333333333E-2L)
-                * w
-            + 1.0L;
-    else
-        w = 1.0L + w * __polevll(w, STIR, 8);
+    w = stirf_series(x);
     v = powl(x, 0.5L * x - 0.25L);
     return ((((ey / v) * scale) / v) / (SQTPI * w));
 }
@@ -2317,9 +2313,9 @@ long double olm_tgammal(long double x)
 
     if (q > 13.0L)
     {
-        int sign = 1;
         if (x < 0.0L)
         {
+            int sign = 1;
             p = floorl(q);
             if (p == q) return (x - x) / (x - x);
             // |x| can exceed INT_MAX here, so avoid an int cast.
@@ -2333,14 +2329,10 @@ long double olm_tgammal(long double x)
             z = q * sinl(PIL * z);
             z = fabsl(z);
             // Reciprocal form: large |x| underflows instead of overflowing.
-            z = rstirf(q, PIL / z);
+            return (sign * rstirf(q, PIL / z));
         }
-        else
-        {
-            if (q > MAXGAML) return (sign * INFINITY);
-            z = stirf(x);
-        }
-        return (sign * z);
+        if (q > MAXGAML) return (INFINITY);
+        return (stirf(x));
     }
 
     z = 1.0L;
