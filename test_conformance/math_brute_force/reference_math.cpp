@@ -6088,7 +6088,21 @@ int reference_notl(long double x)
     return r;
 }
 
-long double reference_erfcl(long double x) { return erfc(x); }
+long double reference_erfcl(long double x)
+{
+#if defined(__ANDROID__)
+    // Bionic's 128-bit erfcl() (FreeBSD ld128/s_erfl.c) returns 1 - x for
+    // |x| < 2^-34, omitting the 2/sqrt(pi) factor. Use the leading term of
+    // the series there; the next term is far below double precision.
+    if (fabsl(x) < 0x1.0p-34L)
+    {
+        const long double two_over_sqrt_pi =
+            1.12837916709551257389615890312154517L;
+        return 1.0L - two_over_sqrt_pi * x;
+    }
+#endif
+    return erfc(x);
+}
 long double reference_erfl(long double x) { return erf(x); }
 
 double reference_erfc(double x) { return erfc(x); }
