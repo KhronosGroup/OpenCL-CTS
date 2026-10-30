@@ -2,6 +2,10 @@
     "test_api": {
         "": {
             "enqueue_task": "pass",
+            "negative_create_buffer": "pass",
+            "negative_create_buffer_with_properties": "pass",
+            "negative_create_image": "pass",
+            "negative_create_image_with_properties": "pass",
             "negative_enqueue_invalid_work_dim": "pass"
         }
     },
