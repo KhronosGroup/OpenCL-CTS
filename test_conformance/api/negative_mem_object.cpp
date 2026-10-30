@@ -134,10 +134,11 @@ int test_create_buffer(cl_context context, bool with_props)
 
         if (error != CL_INVALID_VALUE || buffer != nullptr)
         {
-            log_error("%s(flags: 0x%llx) with CL_MEM_KERNEL_READ_AND_WRITE, "
-                      "expected CL_INVALID_VALUE, got %s\n",
-                      api_name, (unsigned long long)flags,
-                      IGetErrorString(error));
+            log_error(
+                "%s(flags: 0x%llx) with CL_MEM_KERNEL_READ_AND_WRITE returned "
+                "%p with %s, expected NULL with CL_INVALID_VALUE\n",
+                api_name, (unsigned long long)flags, (void *)buffer,
+                IGetErrorString(error));
             return TEST_FAIL;
         }
     }
@@ -187,10 +188,11 @@ int test_create_image(cl_context context, bool with_props)
             if (error != CL_INVALID_VALUE || image != nullptr)
             {
                 log_error("%s(%s, flags: 0x%llx) with "
-                          "CL_MEM_KERNEL_READ_AND_WRITE, expected "
-                          "CL_INVALID_VALUE, got %s\n",
+                          "CL_MEM_KERNEL_READ_AND_WRITE returned %p with %s, "
+                          "expected NULL with CL_INVALID_VALUE\n",
                           api_name, convert_image_type_to_string(type),
-                          (unsigned long long)flags, IGetErrorString(error));
+                          (unsigned long long)flags, (void *)image,
+                          IGetErrorString(error));
                 return TEST_FAIL;
             }
         }
