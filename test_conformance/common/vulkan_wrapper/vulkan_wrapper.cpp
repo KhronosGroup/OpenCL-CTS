@@ -728,26 +728,16 @@ VulkanDevice::VulkanDevice(
         vkCreateDevice(physicalDevice, &vkDeviceCreateInfo, NULL, &m_vkDevice);
     }
 
-    VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentFeatures = {};
-    coherentFeatures.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
-
-    VkPhysicalDeviceFeatures2 enabledFeatures = {};
-    enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    enabledFeatures.pNext = &coherentFeatures;
-
-    vkGetPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
-
     // Build device-level memory type list with only legally usable types
     auto &memTypeList = physicalDevice.getMemoryTypeList();
     for (size_t i = 0; i < memTypeList.size(); i++)
     {
         const VulkanMemoryType &mt = memTypeList[i];
         VulkanMemoryTypeProperty flags = mt.getMemoryTypeProperty();
-        if ((flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
-            && !coherentFeatures.deviceCoherentMemory)
+        // deviceCoherentMemory is never enabled at device creation
+        if (flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
         {
-            continue; // feature not enabled, skip
+            continue;
         }
         m_memoryTypeList.add(mt);
     }
