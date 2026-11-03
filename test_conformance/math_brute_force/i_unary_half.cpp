@@ -117,7 +117,7 @@ int TestFunc_Int_Half(const Func *f, MTdata d, bool relaxedMode)
         for (auto j = gMinVectorSizeIndex; j < gMaxVectorSizeIndex; j++)
         {
             size_t vectorSize = sizeValues[j] * sizeof(cl_int);
-            size_t localCount = (bufferSizeOut + vectorSize - 1) / vectorSize;
+            size_t localCount = div_round_up(bufferSizeOut, vectorSize);
             error = clSetKernelArg(kernels[j][thread_id], 0,
                                    sizeof(gOutBuffer[j]), &gOutBuffer[j]);
             test_error(error, "Failed to set kernel argument");
