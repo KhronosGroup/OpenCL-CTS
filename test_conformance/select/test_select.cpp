@@ -34,6 +34,7 @@
 
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
+#include "harness/mathHelpers.h"
 #include "harness/mt19937.h"
 #include "harness/parseParameters.h"
 
@@ -435,8 +436,7 @@ static int doTest(cl_command_queue queue, cl_context context, Type stype, Type c
     {
         const uint32_t vecsize = element_count[vector_idx];
         const size_t vector_size = vecsize * type_size[stype];
-        const size_t vector_count =
-            (BUFFER_SIZE + vector_size - 1) / vector_size;
+        const size_t vector_count = div_round_up(BUFFER_SIZE, vector_size);
         const uint32_t full_msb_mask_elements = vecsize * (1u << vecsize);
         const uint32_t min_cmp_elements = 64 * 1024;
         const uint32_t nb_elements =

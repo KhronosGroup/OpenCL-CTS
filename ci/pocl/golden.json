@@ -44,6 +44,7 @@
             "loop": "pass",
             "local_arg_def": "pass",
             "local_kernel_def": "pass",
+            "work_item_functions": "pass",
             "constant": "pass"
         }
     },

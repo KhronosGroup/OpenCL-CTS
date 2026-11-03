@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 namespace {
@@ -274,8 +275,8 @@ struct TestWorkItemFns
                                 (int)testData[q].localID[j]);
                             return -1;
                         }
-                        size_t groupCount = (threads[j] + localThreads[j] - 1)
-                            / localThreads[j];
+                        size_t groupCount =
+                            div_round_up(threads[j], localThreads[j]);
                         if (testData[q].numGroups[j] != (cl_uint)groupCount)
                         {
                             log_error("ERROR: get_num_groups(%d) did not "
