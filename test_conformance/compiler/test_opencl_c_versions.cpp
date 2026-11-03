@@ -386,7 +386,7 @@ static int test_CL_DEVICE_OPENCL_C_VERSION_versions(cl_device_id device,
 
 REGISTER_TEST(opencl_c_version_macro)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const Version clc_version = get_device_cl_c_version(device);
     if (clc_version < Version(1, 2))
@@ -429,7 +429,7 @@ REGISTER_TEST(opencl_c_version_macro)
 
 REGISTER_TEST(opencl_c_versions)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const Version version = get_device_cl_version(device);
 

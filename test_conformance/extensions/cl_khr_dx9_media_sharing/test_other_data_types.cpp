@@ -299,7 +299,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %i, OCL object is different then "
+                    log_error("Frame idx: %zu, OCL object is different then "
                               "expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -442,7 +442,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                                  out, bufferIn[frameIdx % FRAME_NUM], width,
                                  height, planeNum))
                 {
-                    log_error("Frame idx: %i, Mapped OCL object is different "
+                    log_error("Frame idx: %zu, Mapped OCL object is different "
                               "then expected\n",
                               frameIdx);
                     result.ResultSub(CResult::TEST_FAIL);
@@ -500,7 +500,7 @@ int other_data_types(cl_device_id deviceID, cl_context context,
                              planeNum))
             {
                 log_error(
-                    "Frame idx: %i, media object is different then expected\n",
+                    "Frame idx: %zu, media object is different then expected\n",
                     frameIdx);
                 result.ResultSub(CResult::TEST_FAIL);
             }

@@ -164,6 +164,25 @@ template <typename T> T *register_test(const char *name, Version version)
         }                                                                      \
     } while (0)
 
+// This is a macro rather than a function to be able to use and act like the
+// existing test_error macro.
+//
+// Not all tests need to use this macro, only those that don't use the
+// test harness compiler helpers.
+#define CHECK_COMPILER_AVAILABLE(DEVICE)                                       \
+    {                                                                          \
+        cl_bool compilerAvailable = CL_FALSE;                                  \
+        cl_int error = clGetDeviceInfo((DEVICE), CL_DEVICE_COMPILER_AVAILABLE, \
+                                       sizeof(compilerAvailable),              \
+                                       &compilerAvailable, NULL);              \
+        test_error(error, "Unable to query CL_DEVICE_COMPILER_AVAILABLE");     \
+        if (compilerAvailable == CL_FALSE)                                     \
+        {                                                                      \
+            log_info("Skipping test - no compiler is available.\n");           \
+            return TEST_SKIPPED_ITSELF;                                        \
+        }                                                                      \
+    }
+
 extern int gFailCount;
 extern int gTestCount;
 extern cl_uint gReSeed;

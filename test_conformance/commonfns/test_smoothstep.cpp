@@ -18,6 +18,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <cmath>
+
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 
 #include "test_base.h"
@@ -57,32 +60,70 @@ const char *smoothstep_fn_code_pattern_v3_scalar =
 
 namespace {
 
+double smoothstep_reference(const double edge0, const double edge1,
+                            const double x)
+{
+    const double t =
+        std::fmin(std::fmax((x - edge0) / (edge1 - edge0), 0.0), 1.0);
+    return t * t * (3.0 - 2.0 * t);
+}
+
+template <typename T>
+bool is_special_result_valid(const T edge0, const T edge1, const T x,
+                             const T output, const double reference)
+{
+    const double lower = conv_to_dbl(edge0);
+    const double upper = conv_to_dbl(edge1);
+
+    // Float and double input ranges avoid intermediate overflow.
+    bool stable_interval = true;
+    if constexpr (std::is_same<T, half>::value)
+    {
+        // Half intermediates may overflow or flush to zero; subnormal edges
+        // may also be flushed before subtraction.
+        const double width = upper - lower;
+        stable_interval = width >= CL_HALF_MIN && width <= CL_HALF_MAX
+            && (lower == 0.0 || std::fabs(lower) >= CL_HALF_MIN)
+            && (upper == 0.0 || std::fabs(upper) >= CL_HALF_MIN);
+    }
+    // For x >= edge1, intermediate overflow or flushing can result in NaN,
+    // which gets clamped to 0 instead of 1.
+    const bool requires_exact_result =
+        conv_to_dbl(x) <= lower || (stable_interval && conv_to_dbl(x) >= upper);
+    const bool exact_result_mismatch =
+        requires_exact_result && !fp_value_equals(reference, output);
+
+    const bool unexpected_nonfinite = !std::isfinite(conv_to_dbl(output));
+
+    return !exact_result_mismatch && !unexpected_nonfinite;
+}
+
 template <typename T>
 int verify_smoothstep(const T *const edge0, const T *const edge1,
                       const T *const x, const T *const outptr, const int n,
                       const int veclen, const bool vecParam)
 {
-    double r, t;
     float delta = 0, max_delta = 0;
 
     if (vecParam)
     {
         for (int i = 0; i < n * veclen; i++)
         {
-            t = (conv_to_dbl(x[i]) - conv_to_dbl(edge0[i]))
-                / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
-            if (t < 0.0)
-                t = 0.0;
-            else if (t > 1.0)
-                t = 1.0;
-            r = t * t * (3.0 - 2.0 * t);
-            if (r == 0.0 && !fp_value_equals(r, outptr[i]))
+            // Results are undefined for NaN inputs or edge0 >= edge1.
+            if (!(conv_to_dbl(edge0[i]) < conv_to_dbl(edge1[i]))
+                || isnan_fp(x[i]))
+                continue;
+
+            const double r =
+                smoothstep_reference(conv_to_dbl(edge0[i]),
+                                     conv_to_dbl(edge1[i]), conv_to_dbl(x[i]));
+            if (!is_special_result_valid(edge0[i], edge1[i], x[i], outptr[i],
+                                         r))
             {
-                log_error(
-                    "%d) verification error: smoothstep(%a, %a, %a) = *%a "
-                    "vs. %a\n",
-                    i, conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
-                    conv_to_flt(x[i]), r, conv_to_flt(outptr[i]));
+                log_error("%d) verification error: smoothstep(%a, %a, %a): "
+                          "expected %a, got %a\n",
+                          i, conv_to_dbl(edge0[i]), conv_to_dbl(edge1[i]),
+                          conv_to_dbl(x[i]), r, conv_to_dbl(outptr[i]));
                 return -1;
             }
             delta = (float)fabs(r - conv_to_dbl(outptr[i]));
@@ -90,11 +131,10 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
             {
                 if (delta > MAX_ERR)
                 {
-                    log_error(
-                        "%d) verification error: smoothstep(%a, %a, %a) = "
-                        "*%a vs. %a\n",
-                        i, conv_to_flt(edge0[i]), conv_to_flt(edge1[i]),
-                        conv_to_flt(x[i]), r, conv_to_flt(outptr[i]));
+                    log_error("%d) verification error: smoothstep(%a, %a, %a): "
+                              "expected %a, got %a\n",
+                              i, conv_to_dbl(edge0[i]), conv_to_dbl(edge1[i]),
+                              conv_to_dbl(x[i]), r, conv_to_dbl(outptr[i]));
                     return -1;
                 }
             }
@@ -106,24 +146,27 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
     {
         for (int i = 0; i < n; ++i)
         {
+            // Results are undefined unless edge0 < edge1.
+            if (!(conv_to_dbl(edge0[i]) < conv_to_dbl(edge1[i]))) continue;
+
             int ii = i / veclen;
             int vi = i * veclen;
             for (int j = 0; j < veclen; ++j, ++vi)
             {
-                t = (conv_to_dbl(x[vi]) - conv_to_dbl(edge0[i]))
-                    / (conv_to_dbl(edge1[i]) - conv_to_dbl(edge0[i]));
-                if (t < 0.0)
-                    t = 0.0;
-                else if (t > 1.0)
-                    t = 1.0;
-                r = t * t * (3.0 - 2.0 * t);
-                if (r == 0.0 && !fp_value_equals(r, outptr[vi]))
+                // Results are undefined if x is NaN.
+                if (isnan_fp(x[vi])) continue;
+
+                const double r = smoothstep_reference(conv_to_dbl(edge0[i]),
+                                                      conv_to_dbl(edge1[i]),
+                                                      conv_to_dbl(x[vi]));
+                if (!is_special_result_valid(edge0[i], edge1[i], x[vi],
+                                             outptr[vi], r))
                 {
                     log_error("{%d, element %d}) verification error: "
-                              "smoothstep(%a, %a, %a) = *%a vs. %a\n",
-                              ii, j, conv_to_flt(edge0[i]),
-                              conv_to_flt(edge1[i]), conv_to_flt(x[vi]), r,
-                              conv_to_flt(outptr[vi]));
+                              "smoothstep(%a, %a, %a): expected %a, got %a\n",
+                              ii, j, conv_to_dbl(edge0[i]),
+                              conv_to_dbl(edge1[i]), conv_to_dbl(x[vi]), r,
+                              conv_to_dbl(outptr[vi]));
                     return -1;
                 }
                 delta = (float)fabs(r - conv_to_dbl(outptr[vi]));
@@ -132,11 +175,11 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
                 {
                     if (delta > MAX_ERR)
                     {
-                        log_error("{%d, element %d}) verification error: "
-                                  "smoothstep(%a, %a, %a) = *%a vs. %a\n",
-                                  ii, j, conv_to_flt(edge0[i]),
-                                  conv_to_flt(edge1[i]), conv_to_flt(x[vi]), r,
-                                  conv_to_flt(outptr[vi]));
+                        log_error(
+                            "{%d, element %d}) verification error: "
+                            "smoothstep(%a, %a, %a): expected %a, got %a\n",
+                            ii, j, conv_to_dbl(edge0[i]), conv_to_dbl(edge1[i]),
+                            conv_to_dbl(x[vi]), r, conv_to_dbl(outptr[vi]));
                         return -1;
                     }
                 }
@@ -155,7 +198,6 @@ int verify_smoothstep(const T *const edge0, const T *const edge1,
 
     return 0;
 }
-
 }
 
 template <typename T>

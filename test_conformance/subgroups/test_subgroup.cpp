@@ -37,7 +37,7 @@ template <NonUniformVoteOp operation> struct AA
         int ng = test_params.global_workgroup_size;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         int e;
         ng = ng / nw;
         ii = 0;
@@ -80,7 +80,7 @@ template <NonUniformVoteOp operation> struct AA
         int ng = test_params.global_workgroup_size;
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
-        int nj = (nw + ns - 1) / ns;
+        int nj = div_round_up(nw, ns);
         cl_int taa, raa;
         ng = ng / nw;
 

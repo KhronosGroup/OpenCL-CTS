@@ -440,7 +440,7 @@ REGISTER_TEST(unload_invalid)
 /* Test calling the function multiple times in a row */
 REGISTER_TEST(unload_repeated)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
     try
@@ -470,7 +470,7 @@ REGISTER_TEST(unload_repeated)
 /* Test calling the function between compilation and linking of programs */
 REGISTER_TEST(unload_compile_unload_link)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
     try
@@ -500,7 +500,7 @@ REGISTER_TEST(unload_compile_unload_link)
 /* Test calling the function between program build and kernel creation */
 REGISTER_TEST(unload_build_unload_create_kernel)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
     try
@@ -530,7 +530,7 @@ REGISTER_TEST(unload_build_unload_create_kernel)
  * function in between */
 REGISTER_TEST(unload_link_different)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
 
@@ -679,7 +679,7 @@ REGISTER_TEST(unload_build_threaded)
 {
     using clock = std::chrono::steady_clock;
 
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
 
@@ -767,7 +767,7 @@ REGISTER_TEST(unload_build_threaded)
 /* Test grabbing program build information after calling the unload function */
 REGISTER_TEST(unload_build_info)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
 
@@ -929,7 +929,7 @@ REGISTER_TEST(unload_build_info)
  * program binaries */
 REGISTER_TEST(unload_program_binaries)
 {
-    check_compiler_available(device);
+    CHECK_COMPILER_AVAILABLE(device);
 
     const cl_platform_id platform = device_platform(device);
 

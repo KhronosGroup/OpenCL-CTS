@@ -18,7 +18,7 @@
 
 #include <cassert>
 
-#include "function_list.h"
+#include "harness/math_function_list.h"
 
 #if defined(__PPC__)
 // Global varaiable used to hold the FPU control register state. The FPSCR

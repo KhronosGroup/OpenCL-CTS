@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef FUNCTION_LIST_H
-#define FUNCTION_LIST_H
+#ifndef MATH_FUNCTION_LIST_H
+#define MATH_FUNCTION_LIST_H
 
 #include "harness/compat.h"
 

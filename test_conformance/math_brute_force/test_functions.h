@@ -16,7 +16,7 @@
 #ifndef TEST_FUNCTIONS_H
 #define TEST_FUNCTIONS_H
 
-#include "function_list.h"
+#include "harness/math_function_list.h"
 
 // float foo(float)
 int TestFunc_Float_Float(const Func *f, MTdata, bool relaxedMode);

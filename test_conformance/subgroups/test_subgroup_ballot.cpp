@@ -33,10 +33,9 @@ template <typename Ty> struct BALLOT
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
-        wg_number = non_uniform_size ? wg_number + 1 : wg_number;
+        int wg_number = div_round_up(gws, lws);
         int last_subgroup_size = 0;
 
         for (int wg_id = 0; wg_id < wg_number; ++wg_id)
@@ -94,10 +93,9 @@ template <typename Ty> struct BALLOT
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
-        wg_number = non_uniform_size ? wg_number + 1 : wg_number;
+        int wg_number = div_round_up(gws, lws);
         int last_subgroup_size = 0;
 
         for (int wg_id = 0; wg_id < wg_number; ++wg_id)
@@ -193,7 +191,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int wg_number = gws / lws;
         int limit_sbs = sbs > 100 ? 100 : sbs;
 
@@ -237,7 +235,7 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_EXTRACT
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int wg_number = gws / lws;
         cl_uint4 expected_result, device_result;
         int last_subgroup_size = 0;
@@ -359,16 +357,12 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
+        int wg_number = div_round_up(gws, lws);
         int last_subgroup_size = 0;
         int current_sbs = 0;
 
-        if (non_uniform_size)
-        {
-            wg_number++;
-        }
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
             if (non_uniform_size && wg_id == wg_number - 1)
@@ -461,10 +455,9 @@ template <typename Ty, BallotOp operation> struct BALLOT_BIT_OPS
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int non_uniform_size = gws % lws;
-        int wg_number = gws / lws;
-        wg_number = non_uniform_size ? wg_number + 1 : wg_number;
+        int wg_number = div_round_up(gws, lws);
         cl_uint expected_result, device_result;
         int last_subgroup_size = 0;
         int current_sbs = 0;
@@ -621,7 +614,7 @@ template <typename Ty, BallotOp operation> struct SMASK
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         int wg_number = gws / lws;
         for (wg_id = 0; wg_id < wg_number; ++wg_id)
         { // for each work_group
@@ -658,7 +651,7 @@ template <typename Ty, BallotOp operation> struct SMASK
         int gws = test_params.global_workgroup_size;
         int lws = test_params.local_workgroup_size;
         int sbs = test_params.subgroup_size;
-        int sb_number = (lws + sbs - 1) / sbs;
+        int sb_number = div_round_up(lws, sbs);
         Ty expected_result, device_result;
         int wg_number = gws / lws;
 

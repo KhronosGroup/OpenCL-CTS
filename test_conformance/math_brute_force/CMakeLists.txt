@@ -1,5 +1,10 @@
 set(MODULE_NAME BRUTEFORCE)
 
+# Needed so test_common/harness/math_function_list.cpp can find
+# reference_math.h and test_functions.h when compiled without
+# FUNCTION_LIST_ULPS_ONLY.
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+
 set(${MODULE_NAME}_SOURCES
     binary_double.cpp
     binary_float.cpp
@@ -16,8 +21,7 @@ set(${MODULE_NAME}_SOURCES
     common.cpp
     common.h
     edge_cases.cpp
-    function_list.cpp
-    function_list.h
+    ${CLConform_SOURCE_DIR}/test_common/harness/math_function_list.cpp
     i_unary_double.cpp
     i_unary_float.cpp
     i_unary_half.cpp

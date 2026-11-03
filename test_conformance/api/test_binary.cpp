@@ -15,6 +15,8 @@
 //
 #include "testBase.h"
 
+#include <vector>
+
 static const char *sample_binary_kernel_source[] = {
 "__kernel void sample_test(__global float *src, __global int *dst)\n"
 "{\n"
@@ -24,6 +26,19 @@ static const char *sample_binary_kernel_source[] = {
 "\n"
 "}\n" };
 
+static const char *sample_header_source =
+    "extern __kernel void CopyBuffer(__global float *src,\n"
+    "                                __global float *dst);\n";
+
+static const char *sample_header_name = "simple_header.h";
+
+static const char *sample_source_with_header =
+    "#include \"simple_header.h\"\n"
+    "__kernel void AnotherCopyBuffer(__global float *src,\n"
+    "                                __global float *dst)\n"
+    "{\n"
+    "    CopyBuffer(src, dst);\n"
+    "}\n";
 
 REGISTER_TEST(binary_get)
 {
@@ -215,4 +230,52 @@ REGISTER_TEST(binary_create)
   free(out_data);
   free(out_data_binary);
     return 0;
+}
+
+REGISTER_TEST(binary_create_with_header)
+{
+    CHECK_COMPILER_AVAILABLE(device);
+
+    cl_int error;
+    clProgramWrapper header = clCreateProgramWithSource(
+        context, 1, &sample_header_source, nullptr, &error);
+    test_error(error, "Unable to create header program");
+    clProgramWrapper program = clCreateProgramWithSource(
+        context, 1, &sample_source_with_header, nullptr, &error);
+    test_error(error, "Unable to create program with embedded header");
+
+    error = clCompileProgram(program, 1, &device, nullptr, 1, &header,
+                             &sample_header_name, nullptr, nullptr);
+    test_error(error, "Unable to compile program with embedded header");
+
+    size_t binary_size;
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,
+                             sizeof(binary_size), &binary_size, nullptr);
+    test_error(error, "Unable to get compiled program binary size");
+    test_assert_error(binary_size != 0, "Compiled program binary size is zero");
+
+    std::vector<unsigned char> binary(binary_size);
+    unsigned char *binary_buffer = binary.data();
+    error = clGetProgramInfo(program, CL_PROGRAM_BINARIES,
+                             sizeof(binary_buffer), &binary_buffer, nullptr);
+    test_error(error, "Unable to get compiled program binary");
+
+    const unsigned char *binary_data = binary.data();
+    cl_int binary_status;
+    clProgramWrapper program_from_binary =
+        clCreateProgramWithBinary(context, 1, &device, &binary_size,
+                                  &binary_data, &binary_status, &error);
+    test_error(error,
+               "Unable to create program from compiled binary with header");
+    test_error(binary_status, "Unable to load compiled binary for device");
+
+    cl_program_binary_type binary_type;
+    error = clGetProgramBuildInfo(program_from_binary, device,
+                                  CL_PROGRAM_BINARY_TYPE, sizeof(binary_type),
+                                  &binary_type, nullptr);
+    test_error(error, "Unable to query restored program binary type");
+    test_assert_error(binary_type == CL_PROGRAM_BINARY_TYPE_COMPILED_OBJECT,
+                      "Restored program binary type is not a compiled object");
+
+    return TEST_PASS;
 }

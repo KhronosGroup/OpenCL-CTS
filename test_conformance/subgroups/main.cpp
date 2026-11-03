@@ -16,7 +16,7 @@
 #include "harness/compat.h"
 #include "harness/testHarness.h"
 #include "harness/kernelHelpers.h"
-#include "harness/mt19937.cpp"
+#include "harness/mt19937.h"
 
 #include <CL/cl_half.h>
 

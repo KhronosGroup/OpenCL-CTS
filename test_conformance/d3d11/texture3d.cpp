@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#define _CRT_SECURE_NO_WARNINGS
 #include "harness.h"
 
 Texture3DSize texture3DSizes[] =
@@ -90,24 +89,19 @@ texture3DPatterns[2][2][2] =
     },
 };
 
-void SubTestTexture3D(
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC,
-    const TextureFormat* format,
-    const Texture3DSize* size)
+int SubTestTexture3D(cl_context context, cl_command_queue command_queue,
+                     ID3D11Device* pDevice, ID3D11DeviceContext* pDC,
+                     const TextureFormat* format, const Texture3DSize* size)
 {
     ID3D11Texture3D* pTexture = NULL;
     HRESULT hr = S_OK;
 
     cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
-    HarnessD3D11_TestBegin("3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d",
-        format->name_format,
-        size->Width,
-        size->Height,
-        size->Depth,
+    log_info(
+        "3D Texture: Format=%s, Width=%d, Height=%d, Depth=%d, MipLevels=%d\n",
+        format->name_format, size->Width, size->Height, size->Depth,
         size->MipLevels);
 
     struct
@@ -460,30 +454,22 @@ Cleanup:
     {
         clReleaseMemObject(subResourceInfo[i].mem);
     }
-
-    HarnessD3D11_TestEnd();
+    return testResult;
 }
 
 
-void TestDeviceTexture3D(
-    cl_device_id device,
-    cl_context context,
-    cl_command_queue command_queue,
-    ID3D11Device* pDevice,
-    ID3D11DeviceContext* pDC)
+int TestDeviceTexture3D(cl_device_id device, cl_context context,
+                        cl_command_queue command_queue, ID3D11Device* pDevice,
+                        ID3D11DeviceContext* pDC)
 {
-    cl_int result = CL_SUCCESS;
+    int testResult = TEST_PASS;
 
 
     for (UINT format = 0, size = 0; format < formatCount; ++size, ++format)
     {
-        SubTestTexture3D(
-            context,
-            command_queue,
-            pDevice,
-            pDC,
-            &formats[format],
+        testResult |= SubTestTexture3D(
+            context, command_queue, pDevice, pDC, &formats[format],
             &texture3DSizes[size % texture3DSizeCount]);
     }
+    return testResult;
 }
-

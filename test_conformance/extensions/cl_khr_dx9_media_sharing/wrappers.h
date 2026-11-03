@@ -40,6 +40,22 @@ typedef unsigned char UINT8;
 #endif
 #include <dxvahd.h>
 #include <tchar.h>
+#undef __out
+#undef __in
+#undef __inout
+#undef __out_bcount
+#undef __out_bcount_opt
+#undef __in_opt
+#undef __in_ecount
+#undef __in_ecount_opt
+#undef __out_opt
+#undef __out_ecount
+#undef __out_ecount_opt
+#undef __in_bcount_opt
+#undef __inout_opt
+#undef __inout_bcount
+#undef __in_bcount
+#undef __deref_out
 #endif
 
 enum TDeviceStatus

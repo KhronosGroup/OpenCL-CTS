@@ -6,9 +6,12 @@ set (${MODULE_NAME}_SOURCES
     run_build_test.cpp
     run_services.cpp
     kernelargs.cpp
+    ${CLConform_SOURCE_DIR}/test_common/harness/math_function_list.cpp
 )
 
 include(../CMakeCommon.txt)
+
+target_compile_definitions(${${MODULE_NAME}_OUT} PRIVATE FUNCTION_LIST_ULPS_ONLY)
 
 if(UNIX)
     target_compile_options(${${MODULE_NAME}_OUT} PRIVATE -fexceptions -frtti)
