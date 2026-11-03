@@ -15,6 +15,7 @@
 //
 #include "harness/compat.h"
 #include "harness/kernelHelpers.h"
+#include "harness/mathHelpers.h"
 #include "harness/testHarness.h"
 #include "harness/parseParameters.h"
 #include "harness/conversions.h"
@@ -933,7 +934,7 @@ int Test_vStoreHalf_private(cl_device_id device, f2h referenceFunc,
     for (i = 0; i < lastCase; i += blockCount)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
-        auto countPerThread = (count + threadCount - 1) / threadCount;
+        auto countPerThread = div_round_up(count, threadCount);
         fref.i = i;
         fref.count = countPerThread;
         fref.lim = count;
@@ -1784,7 +1785,7 @@ int Test_vStoreaHalf_private(cl_device_id device, f2h referenceFunc,
     for (i = 0; i < (uint64_t)lastCase; i += blockCount)
     {
         count = (cl_uint)std::min((uint64_t)blockCount, lastCase - i);
-        auto countPerThread = (count + threadCount - 1) / threadCount;
+        auto countPerThread = div_round_up(count, threadCount);
         fref.i = i;
         fref.count = countPerThread;
         fref.lim = count;
