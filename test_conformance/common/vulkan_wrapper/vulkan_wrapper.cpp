@@ -662,10 +662,30 @@ VulkanDevice::VulkanDevice(
         VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
 #endif
 
+    // deviceCoherentMemory is enabled whenever it is supported
+    VkPhysicalDeviceCoherentMemoryFeaturesAMD coherentFeatures = {};
+    coherentFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COHERENT_MEMORY_FEATURES_AMD;
+    if (physicalDevice.hasExtension(
+            VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME))
+    {
+        VkPhysicalDeviceFeatures2 features2 = {};
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &coherentFeatures;
+
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+        if (coherentFeatures.deviceCoherentMemory)
+        {
+            enabledExtensionNameList.push_back(
+                VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME);
+        }
+    }
 
     VkDeviceCreateInfo vkDeviceCreateInfo = {};
     vkDeviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    vkDeviceCreateInfo.pNext = NULL;
+    vkDeviceCreateInfo.pNext =
+        coherentFeatures.deviceCoherentMemory ? &coherentFeatures : NULL;
     vkDeviceCreateInfo.flags = 0;
     vkDeviceCreateInfo.queueCreateInfoCount =
         (uint32_t)vkDeviceQueueCreateInfoList.size();
@@ -711,6 +731,7 @@ VulkanDevice::VulkanDevice(
         int8Enable.sType =
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES;
         int8Enable.shaderInt8 = VK_TRUE;
+        storage8Enable.pNext = const_cast<void *>(vkDeviceCreateInfo.pNext);
         int8Enable.pNext = &storage8Enable;
 
         vkDeviceCreateInfo.pNext = &int8Enable;
@@ -734,8 +755,9 @@ VulkanDevice::VulkanDevice(
     {
         const VulkanMemoryType &mt = memTypeList[i];
         VulkanMemoryTypeProperty flags = mt.getMemoryTypeProperty();
-        // deviceCoherentMemory is never enabled at device creation
-        if (flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+        // deviceCoherentMemory not enabled at device creation
+        if ((flags & VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD)
+            && !coherentFeatures.deviceCoherentMemory)
         {
             continue;
         }
