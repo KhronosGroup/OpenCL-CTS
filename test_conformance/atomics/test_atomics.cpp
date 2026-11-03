@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "harness/conversions.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include <cinttypes>
@@ -1217,7 +1218,7 @@ size_t test_bitwise_num_results(size_t threadCount, ExplicitType dataType)
 {
     size_t numBits = get_explicit_type_size(dataType) * 8;
 
-    return (threadCount + numBits - 1) / numBits;
+    return div_round_up(threadCount, numBits);
 }
 
 #pragma mark ---- and
@@ -1242,7 +1243,7 @@ const char atomic_and_core[] =
 cl_int test_atomic_and_result_int(size_t size, cl_int *startRefValues,
                                   size_t whichResult)
 {
-    size_t numThreads = ((size_t)size + 31) / 32;
+    size_t numThreads = div_round_up(size, 32);
     if (whichResult < numThreads - 1) return 0;
 
     // Last item doesn't get and'ed on every bit, so we have to mask away
@@ -1256,7 +1257,7 @@ cl_int test_atomic_and_result_int(size_t size, cl_int *startRefValues,
 cl_long test_atomic_and_result_long(size_t size, cl_long *startRefValues,
                                     size_t whichResult)
 {
-    size_t numThreads = ((size_t)size + 63) / 64;
+    size_t numThreads = div_round_up(size, 64);
     if (whichResult < numThreads - 1) return 0;
 
     // Last item doesn't get and'ed on every bit, so we have to mask away
@@ -1314,7 +1315,7 @@ const char atomic_or_core[] =
 cl_int test_atomic_or_result_int(size_t size, cl_int *startRefValues,
                                  size_t whichResult)
 {
-    size_t numThreads = ((size_t)size + 31) / 32;
+    size_t numThreads = div_round_up(size, 32);
     if (whichResult < numThreads - 1) return 0xffffffff;
 
     // Last item doesn't get and'ed on every bit, so we have to mask away
@@ -1328,7 +1329,7 @@ cl_int test_atomic_or_result_int(size_t size, cl_int *startRefValues,
 cl_long test_atomic_or_result_long(size_t size, cl_long *startRefValues,
                                    size_t whichResult)
 {
-    size_t numThreads = ((size_t)size + 63) / 64;
+    size_t numThreads = div_round_up(size, 64);
     if (whichResult < numThreads - 1) return 0x0ffffffffffffffffLL;
 
     // Last item doesn't get and'ed on every bit, so we have to mask away
