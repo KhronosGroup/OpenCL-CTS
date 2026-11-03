@@ -13,5 +13,14 @@
             "conformance_version": "pass",
             "pci_bus_info": "skip"
         }
+    },
+    "test_relationals": {
+        "": {
+            "shuffle_copy": "pass",
+            "shuffle_function_call": "pass",
+            "shuffle_array_cast": "pass",
+            "shuffle_built_in": "pass",
+            "shuffle_built_in_dual_input": "pass"
+        }
     }
 }

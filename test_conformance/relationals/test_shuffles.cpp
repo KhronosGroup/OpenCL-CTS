@@ -400,6 +400,10 @@ static int create_shuffle_kernel(cl_context context, cl_program *outProgram,
     {
         strcat(kernelSource, "#pragma OPENCL EXTENSION cl_khr_fp64 : enable\n");
     }
+    if (vecType == kHalf)
+    {
+        strcat(kernelSource, "#pragma OPENCL EXTENSION cl_khr_fp16 : enable\n");
+    }
 
     if (shuffleMode == kFunctionCallMode)
     {
@@ -582,6 +586,7 @@ static int create_shuffle_kernel(cl_context context, cl_program *outProgram,
                 continue;
             }
             ExplicitType maskType = vecType;
+            if (maskType == kHalf) maskType = kUShort;
             if (maskType == kFloat) maskType = kUInt;
             if (maskType == kDouble)
             {
@@ -959,17 +964,28 @@ int test_shuffle_random(cl_device_id device, cl_context context,
                         cl_command_queue queue, ShuffleMode shuffleMode,
                         MTdata d)
 {
-    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt,
-                               kUInt, kLong,  kULong, kFloat,  kDouble };
+    ExplicitType vecType[] = { kChar, kUChar, kShort, kUShort, kInt,   kUInt,
+                               kLong, kULong, kHalf,  kFloat,  kDouble };
+    const unsigned int numVecTypes = ARRAY_SIZE(vecType);
     unsigned int vecSizes[] = { 1, 2, 3, 4, 8, 16, 0 };
     unsigned int srcIdx, dstIdx, typeIndex;
     int error = 0, totalError = 0, prevTotalError = 0;
     RandomSeed seed(gRandomSeed);
 
-    for (typeIndex = 0; typeIndex < 10; typeIndex++)
+    for (typeIndex = 0; typeIndex < numVecTypes; typeIndex++)
     {
         // log_info( "\n\t%s... ", get_explicit_type_name( vecType[ typeIndex ]
         // ) ); fflush( stdout );
+        if (vecType[typeIndex] == kHalf)
+        {
+            if (!is_extension_available(device, "cl_khr_fp16"))
+            {
+                log_info("Extension cl_khr_fp16 not supported; skipping half "
+                         "tests.\n");
+                continue;
+            }
+            log_info("Testing halfs.\n");
+        }
         if (vecType[typeIndex] == kDouble)
         {
             if (!is_extension_available(device, "cl_khr_fp64"))
