@@ -341,6 +341,22 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
     return to_half(0);
 }
 
+// The expected result of an operation over a single operand: the operand
+// itself, except for the logical operations, whose result is 1 or 0 however
+// many operands there are (the identity combined with the operand).
+template <typename Ty> inline Ty single_operand(Ty a, ArithmeticOp operation)
+{
+    switch (operation)
+    {
+        case ArithmeticOp::logical_and:
+        case ArithmeticOp::logical_or:
+        case ArithmeticOp::logical_xor:
+            return calculate<Ty>(TypeManager<Ty>::identify_limits(operation), a,
+                                 operation);
+        default: return a;
+    }
+}
+
 template <typename Ty> bool is_floating_point()
 {
     return std::is_floating_point<Ty>::value
@@ -358,12 +374,23 @@ void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
         fill_and_shuffle_safe_values(safe_values, ns);
     }
 
+    const bool logical = operation == ArithmeticOp::logical_and
+        || operation == ArithmeticOp::logical_or
+        || operation == ArithmeticOp::logical_xor;
+
     for (int k = 0; k < ng; ++k)
     {
         for (int j = 0; j < nj; ++j)
         {
             int ii = j * ns;
             int n = ii + ns > nw ? nw - ii : ns;
+
+            // The logical inputs of each sub-group are, in turn, all false,
+            // all true, all true but one, all false but one, or each at
+            // random, so that logical and, or and xor give both results
+            // whatever the divergence mask and the sub-group size.
+            int logical_inputs = (k * nj + j) % 5;
+            int odd_one = logical ? genrand_int32(gMTdata) % n : 0;
 
             for (int i = 0; i < n; ++i)
             {
@@ -373,14 +400,23 @@ void generate_inputs(Ty *x, Ty *t, cl_int *m, int ns, int nw, int ng)
                 {
                     out_value = safe_values[i];
                 }
+                else if (logical)
+                {
+                    bool value;
+                    switch (logical_inputs)
+                    {
+                        case 0: value = false; break;
+                        case 1: value = true; break;
+                        case 2: value = i != odd_one; break;
+                        case 3: value = i == odd_one; break;
+                        default: value = genrand_int32(gMTdata) & 1; break;
+                    }
+                    out_value =
+                        value ? genrand_int64(gMTdata) % (32 * n) + 1 : 0;
+                }
                 else
                 {
                     out_value = genrand_int64(gMTdata) % (32 * n);
-                    if ((operation == ArithmeticOp::logical_and
-                         || operation == ArithmeticOp::logical_or
-                         || operation == ArithmeticOp::logical_xor)
-                        && ((out_value >> 32) & 1) == 0)
-                        out_value = 0; // increase probability of false
                 }
                 set_value(t[ii + i], out_value);
             }
@@ -736,7 +772,8 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                         rr = my[ii + active_work_item];
                         if (active_work_items.size() == 1)
                         {
-                            tr = mx[ii + catch_frist_active];
+                            tr = single_operand<Ty>(mx[ii + catch_frist_active],
+                                                    operation);
                         }
                         else
                         {
@@ -834,7 +871,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                         if (catch_frist_active == -1)
                         {
                             catch_frist_active = i;
-                            tr = mx[ii + i];
+                            tr = single_operand<Ty>(mx[ii + i], operation);
                             active_work_items.insert(i);
                             continue;
                         }
