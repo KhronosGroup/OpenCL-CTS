@@ -1,12 +1,17 @@
 #include "harness/typeWrappers.h"
 #include "harness/extensionHelpers.h"
 #include "harness/errorHelpers.h"
+
+#ifdef VULKAN_IS_SUPPORTED
 #include "opencl_vulkan_wrapper.hpp"
+#endif
+
 #include <thread>
 #include <chrono>
 #include <algorithm>
 #include <cinttypes>
 
+#ifdef VULKAN_IS_SUPPORTED
 #define SEMAPHORE_PARAM_TEST(param_name, param_type, expected)                 \
     do                                                                         \
     {                                                                          \
@@ -117,6 +122,7 @@ static cl_int get_device_semaphore_handle_types(
 
     return CL_SUCCESS;
 }
+#endif
 
 // Confirm the semaphores can be successfully queried
 REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
@@ -124,6 +130,7 @@ REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
     REQUIRE_EXTENSION("cl_khr_semaphore");
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -195,15 +202,17 @@ REGISTER_TEST_VERSION(external_semaphores_queries, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 cl_int doTestImportExport(cl_device_id device, cl_context contexts[2],
                           cl_command_queue queues[2])
 {
-    cl_int err = CL_SUCCESS;
-
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
+#ifdef VULKAN_IS_SUPPORTED
     GET_PFN(device, clEnqueueSignalSemaphoresKHR);
     GET_PFN(device, clEnqueueWaitSemaphoresKHR);
     GET_PFN(device, clCreateSemaphoreWithPropertiesKHR);
@@ -213,6 +222,7 @@ cl_int doTestImportExport(cl_device_id device, cl_context contexts[2],
     std::vector<cl_external_semaphore_handle_type_khr> import_handle_types;
     std::vector<cl_external_semaphore_handle_type_khr> export_handle_types;
 
+    cl_int err = CL_SUCCESS;
     err = get_device_semaphore_handle_types(
         device, CL_DEVICE_SEMAPHORE_IMPORT_HANDLE_TYPES_KHR,
         import_handle_types);
@@ -308,6 +318,9 @@ cl_int doTestImportExport(cl_device_id device, cl_context contexts[2],
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 REGISTER_TEST_VERSION(external_semaphores_cross_context, Version(1, 2))
@@ -382,7 +395,9 @@ REGISTER_TEST_VERSION(external_semaphores_import_export, Version(1, 2))
 REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -454,13 +469,18 @@ REGISTER_TEST_VERSION(external_semaphores_simple_1, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 // Confirm that a semaphore can be reused multiple times
 REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -587,6 +607,9 @@ REGISTER_TEST_VERSION(external_semaphores_reuse, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 // Helper function that signals and waits on semaphore across two different
@@ -598,6 +621,7 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -671,12 +695,17 @@ static int external_semaphore_cross_queue_helper(cl_device_id device,
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 
 // Confirm that a semaphore works across different ooo queues
 REGISTER_TEST_VERSION(external_semaphores_cross_queues_ooo, Version(1, 2))
 {
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+
     cl_int err;
 
     // Create ooo queues
@@ -714,6 +743,7 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -821,13 +851,18 @@ REGISTER_TEST_VERSION(external_semaphores_cross_queues_io2, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 // Confirm that we can signal multiple semaphores with one command
 REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -916,13 +951,18 @@ REGISTER_TEST_VERSION(external_semaphores_multi_signal, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }
 
 // Confirm that we can wait for multiple semaphores with one command
 REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
 {
     REQUIRE_EXTENSION("cl_khr_external_semaphore");
+    REQUIRE_QUEUE_PROPERTIES(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
 
+#ifdef VULKAN_IS_SUPPORTED
     if (init_vulkan_device(1, &device))
     {
         log_info("Cannot initialise Vulkan. "
@@ -1008,4 +1048,7 @@ REGISTER_TEST_VERSION(external_semaphores_multi_wait, Version(1, 2))
     }
 
     return TEST_PASS;
+#else
+    return TEST_FAIL;
+#endif
 }

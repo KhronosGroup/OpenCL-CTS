@@ -25,10 +25,14 @@
 
 #if !defined(__APPLE__)
 #include <CL/cl.h>
+#ifdef GL_IS_SUPPORTED
 #include "gl/gl_headers.h"
+#endif
 #include <CL/cl_gl.h>
 #else
+#ifdef GL_IS_SUPPORTED
 #include "gl/gl_headers.h"
+#endif
 #endif
 
 #include "harness/imageHelpers.h"
@@ -38,7 +42,9 @@
 #include "harness/conversions.h"
 #include "harness/mt19937.h"
 
+#ifdef GL_IS_SUPPORTED
 #include "gl/helpers.h"
+#endif
 
 extern const char *get_kernel_suffix(cl_image_format *format);
 extern const char *get_write_conversion(cl_image_format *format,
@@ -46,9 +52,11 @@ extern const char *get_write_conversion(cl_image_format *format,
 extern ExplicitType get_read_kernel_type(cl_image_format *format);
 extern ExplicitType get_write_kernel_type(cl_image_format *format);
 
+#ifdef GL_IS_SUPPORTED
 extern char *convert_to_expected(void *inputBuffer, size_t numPixels,
                                  ExplicitType inType, ExplicitType outType,
                                  size_t channelNum, GLenum glDataType = 0);
+#endif
 extern int validate_integer_results(void *expectedResults, void *actualResults,
                                     size_t width, size_t height,
                                     size_t sampleNum, size_t typeSize);
@@ -69,10 +77,12 @@ extern int validate_float_results_rgb_101010(void *expectedResults,
                                              size_t height, size_t depth,
                                              size_t sampleNum);
 
+#ifdef GL_IS_SUPPORTED
 extern int CheckGLObjectInfo(cl_mem mem, cl_gl_object_type expected_cl_gl_type,
                              GLuint expected_gl_name,
                              GLenum expected_cl_gl_texture_target,
                              GLint expected_cl_gl_mipmap_level);
+#endif
 
 extern bool CheckGLIntegerExtensionSupport();
 

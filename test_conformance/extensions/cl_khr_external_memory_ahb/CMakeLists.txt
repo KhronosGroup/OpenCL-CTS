@@ -7,6 +7,8 @@ set(${MODULE_NAME}_SOURCES
     debug_ahb.cpp
 )
 
-link_libraries(OpenCL nativewindow)
+if(DEFINED ANDROID_PLATFORM AND ANDROID_PLATFORM GREATER 28)
+  link_libraries(OpenCL nativewindow)
+endif()
 
 include(../../CMakeCommon.txt)

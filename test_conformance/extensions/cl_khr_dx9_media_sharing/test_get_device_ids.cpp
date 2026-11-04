@@ -13,6 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "testHarness.h"
+#ifdef _WIN32
 #include "utils.h"
 
 int get_device_ids(cl_device_id deviceID, cl_context context,
@@ -181,12 +183,13 @@ int get_device_ids(cl_device_id deviceID, cl_context context,
 
     return result.Result();
 }
+#endif
 
 REGISTER_TEST(get_device_ids)
 {
+#ifdef _WIN32
     CResult result;
 
-#if defined(_WIN32)
     if (get_device_ids(device, context, queue, num_elements,
                        CL_ADAPTER_D3D9_KHR)
         != 0)
@@ -211,9 +214,8 @@ REGISTER_TEST(get_device_ids)
         result.ResultSub(CResult::TEST_FAIL);
     }
 
-#else
-    return TEST_NOT_IMPLEMENTED;
-#endif
-
     return result.Result();
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
