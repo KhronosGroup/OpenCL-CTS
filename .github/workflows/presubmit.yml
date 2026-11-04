@@ -126,6 +126,25 @@ jobs:
                 -DOPENCL_ICD_LOADER_HEADERS_DIR='${{ github.workspace }}'/OpenCL-Headers/ \
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
+      - name: Fetch and build SPIRV-Tools
+        shell: bash
+        run: |
+          git clone https://github.com/KhronosGroup/SPIRV-Tools.git
+          cd SPIRV-Tools
+          mkdir build
+          cd build
+          SPIRV_HEADERS_SOURCE_DIR='${{ github.workspace }}'/SPIRV-Headers
+          SPIRV_HEADERS_SOURCE_DIR="${SPIRV_HEADERS_SOURCE_DIR//\\//}"
+          cmake .. -G Ninja \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}'/SPIRV-Tools/install \
+                -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE} \
+                -DSPIRV-Headers_SOURCE_DIR="${SPIRV_HEADERS_SOURCE_DIR}" \
+                -DSPIRV_SKIP_TESTS=On \
+                -DSPIRV_WERROR=OFF \
+                ${CMAKE_ADDITIONAL_CONFIG_ARGS}
+          cmake --build . --parallel
+          cmake --install .
       - name: Fetch Vulkan Headers
         shell: bash
         run: |
@@ -152,11 +171,15 @@ jobs:
         run: |
           mkdir build
           cd build
+          SPIRV_TOOLS_INSTALL_DIR='${{ github.workspace }}'/SPIRV-Tools/install
+          SPIRV_TOOLS_INSTALL_DIR="${SPIRV_TOOLS_INSTALL_DIR//\\//}"
           if [[ ${RUNNER_OS} == "Windows" ]]; then
               CMAKE_OPENCL_LIBRARIES_OPTION="OpenCL"
               CMAKE_ADDITIONAL_CONFIG_ARGS="-DD3D10_IS_SUPPORTED=ON -DD3D11_IS_SUPPORTED=ON"
+              SPIRV_TOOLS_TARGET_DIR=${SPIRV_TOOLS_INSTALL_DIR}/SPIRV-Tools/cmake
           else
               CMAKE_OPENCL_LIBRARIES_OPTION="-lOpenCL"
+              SPIRV_TOOLS_TARGET_DIR=${SPIRV_TOOLS_INSTALL_DIR}/lib/cmake/SPIRV-Tools
               if [[ '${{ matrix.arch }}' != android-* ]]; then
                   CMAKE_OPENCL_LIBRARIES_OPTION="${CMAKE_OPENCL_LIBRARIES_OPTION} -lpthread"
               fi
@@ -176,6 +199,7 @@ jobs:
                 -DVULKAN_IS_SUPPORTED=ON \
                 -DVULKAN_INCLUDE_DIR='${{ github.workspace }}'/Vulkan-Headers/include/ \
                 -DVULKAN_LIB_DIR='${{ github.workspace }}'/Vulkan-Loader/build/loader/ \
+                -DSPIRV_TOOLS_TARGET_DIR="${SPIRV_TOOLS_TARGET_DIR}" \
                 ${CMAKE_ADDITIONAL_CONFIG_ARGS}
           cmake --build . --parallel
 
