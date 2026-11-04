@@ -134,7 +134,7 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    if (test_params.work_items_mask.test(i))
+                    if (test_params.work_items_mask.active(i))
                     {
                         active_work_items.insert(i);
                         switch (operation)
@@ -200,21 +200,12 @@ template <typename T, NonUniformVoteOp operation> struct VOTE
 };
 
 std::string sub_group_elect_source = R"(
-    __kernel void test_sub_group_elect(const __global Type *in, __global int4 *xy, __global Type *out, uint4 work_item_mask_vector) {
+    __kernel void test_sub_group_elect(const __global Type *in, __global int4 *xy, __global Type *out, const __global uint *work_item_masks) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
         uint elect_work_item = 1 << (subgroup_local_id % 32);
-        uint work_item_mask;
-        if(subgroup_local_id < 32) {
-            work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
-            work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.z;
-        } else if(subgroup_local_id < 128) {
-            work_item_mask = work_item_mask_vector.w;
-        }
+        uint work_item_mask = work_item_masks[subgroup_local_id / 32];
         if (elect_work_item & work_item_mask){
             out[gid] = sub_group_elect();
         }
@@ -222,21 +213,12 @@ std::string sub_group_elect_source = R"(
 )";
 
 std::string sub_group_non_uniform_any_all_all_equal_source = R"(
-    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out, uint4 work_item_mask_vector) {
+    __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type *out, const __global uint *work_item_masks) {
         int gid = get_global_id(0);
         XY(xy,gid);
         uint subgroup_local_id = get_sub_group_local_id();
         uint elect_work_item = 1 << (subgroup_local_id % 32);
-        uint work_item_mask;
-        if(subgroup_local_id < 32) {
-            work_item_mask = work_item_mask_vector.x;
-        } else if(subgroup_local_id < 64) {
-            work_item_mask = work_item_mask_vector.y;
-        } else if(subgroup_local_id < 96) {
-            work_item_mask = work_item_mask_vector.z;
-        } else if(subgroup_local_id < 128) {
-            work_item_mask = work_item_mask_vector.w;
-        }
+        uint work_item_mask = work_item_masks[subgroup_local_id / 32];
         if (elect_work_item & work_item_mask){
                 out[gid] = %s(in[gid]);
             }

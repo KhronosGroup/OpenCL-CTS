@@ -34,6 +34,26 @@ typedef std::bitset<128> bs128;
 extern cl_half_rounding_mode g_rounding_mode;
 
 bs128 cl_uint4_to_bs128(cl_uint4 v);
+
+// A divergence mask has one bit for each work-item of a sub-group, in 32-bit
+// words: work-item i is bit i % 32 of word i / 32. The divergent kernels read
+// the same words from a buffer, so a mask describes a sub-group of any size.
+// An empty mask means that every work-item is active, as in the uniform tests.
+struct DivergenceMask
+{
+    std::vector<cl_uint> words;
+
+    bool active(size_t sub_group_local_id) const
+    {
+        if (words.empty()) return true;
+        size_t word = sub_group_local_id / 32;
+        return word < words.size()
+            && ((words[word] >> (sub_group_local_id % 32)) & 1);
+    }
+};
+
+// The divergence masks to test a sub-group of the given size with.
+std::vector<DivergenceMask> divergence_masks(size_t subgroup_size);
 cl_uint4 bs128_to_cl_uint4(bs128 v);
 cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
                            const std::string &mask_type,
@@ -54,19 +74,16 @@ struct WorkGroupParams
     {
         subgroup_size = 0;
         cluster_size = 0;
-        work_items_mask = 0;
         use_core_subgroups = true;
         dynsc = 0;
-        load_masks();
     }
     size_t global_workgroup_size;
     size_t local_workgroup_size;
     size_t subgroup_size;
     cl_uint cluster_size;
-    bs128 work_items_mask;
+    DivergenceMask work_items_mask;
     size_t dynsc;
     bool use_core_subgroups;
-    std::vector<bs128> all_work_item_masks;
     int divergence_mask_arg;
     int cluster_size_arg;
     void save_kernel_source(const std::string &source, std::string name = "")
@@ -96,114 +113,6 @@ struct WorkGroupParams
 
 private:
     std::map<std::string, std::string> kernel_function_name;
-    void load_masks()
-    {
-        if (divergence_mask_arg != -1)
-        {
-            // 1 in string will be set 1, 0 will be set 0
-            bs128 mask_0xf0f0f0f0("11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xf0f0f0f0);
-            // 1 in string will be set 0, 0 will be set 1
-            bs128 mask_0x0f0f0f0f("11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000"
-                                  "11110000111100001111000011110000",
-                                  128, '1', '0');
-            all_work_item_masks.push_back(mask_0x0f0f0f0f);
-            bs128 mask_0x5555aaaa("10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x5555aaaa);
-            bs128 mask_0xaaaa5555("10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010"
-                                  "10101010101010101010101010101010",
-                                  128, '1', '0');
-            all_work_item_masks.push_back(mask_0xaaaa5555);
-            // 0x0f0ff0f0
-            bs128 mask_0x0f0ff0f0("00001111000011111111000011110000"
-                                  "00001111000011111111000011110000"
-                                  "00001111000011111111000011110000"
-                                  "00001111000011111111000011110000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x0f0ff0f0);
-            // 0xff0000ff
-            bs128 mask_0xff0000ff("11111111000000000000000011111111"
-                                  "11111111000000000000000011111111"
-                                  "11111111000000000000000011111111"
-                                  "11111111000000000000000011111111",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xff0000ff);
-            // 0xff00ff00
-            bs128 mask_0xff00ff00("11111111000000001111111100000000"
-                                  "11111111000000001111111100000000"
-                                  "11111111000000001111111100000000"
-                                  "11111111000000001111111100000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xff00ff00);
-            // 0x00ffff00
-            bs128 mask_0x00ffff00("00000000111111111111111100000000"
-                                  "00000000111111111111111100000000"
-                                  "00000000111111111111111100000000"
-                                  "00000000111111111111111100000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x00ffff00);
-            // 0x80 1 workitem highest id for 8 subgroup size
-            bs128 mask_0x80808080("10000000100000001000000010000000"
-                                  "10000000100000001000000010000000"
-                                  "10000000100000001000000010000000"
-                                  "10000000100000001000000010000000",
-                                  128, '0', '1');
-
-            all_work_item_masks.push_back(mask_0x80808080);
-            // 0x8000 1 workitem highest id for 16 subgroup size
-            bs128 mask_0x80008000("10000000000000001000000000000000"
-                                  "10000000000000001000000000000000"
-                                  "10000000000000001000000000000000"
-                                  "10000000000000001000000000000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x80008000);
-            // 0x80000000 1 workitem highest id for 32 subgroup size
-            bs128 mask_0x80000000("10000000000000000000000000000000"
-                                  "10000000000000000000000000000000"
-                                  "10000000000000000000000000000000"
-                                  "10000000000000000000000000000000",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0x80000000);
-            // 0x80000000 00000000 1 workitem highest id for 64 subgroup size
-            // 0x80000000 1 workitem highest id for 32 subgroup size
-            bs128 mask_0x8000000000000000("10000000000000000000000000000000"
-                                          "00000000000000000000000000000000"
-                                          "10000000000000000000000000000000"
-                                          "00000000000000000000000000000000",
-                                          128, '0', '1');
-
-            all_work_item_masks.push_back(mask_0x8000000000000000);
-            // 0x80000000 00000000 00000000 00000000 1 workitem highest id for
-            // 128 subgroup size
-            bs128 mask_0x80000000000000000000000000000000(
-                "10000000000000000000000000000000"
-                "00000000000000000000000000000000"
-                "00000000000000000000000000000000"
-                "00000000000000000000000000000000",
-                128, '0', '1');
-            all_work_item_masks.push_back(
-                mask_0x80000000000000000000000000000000);
-
-            bs128 mask_0xffffffff("11111111111111111111111111111111"
-                                  "11111111111111111111111111111111"
-                                  "11111111111111111111111111111111"
-                                  "11111111111111111111111111111111",
-                                  128, '0', '1');
-            all_work_item_masks.push_back(mask_0xffffffff);
-        }
-    }
 };
 
 enum class SubgroupsBroadcastOp
@@ -1581,15 +1490,18 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
         idata.resize(input_array_size);
         odata.resize(output_array_size);
 
+        clMemWrapper mask_buffer;
         if (test_params.divergence_mask_arg != -1)
         {
-            cl_uint4 mask_vector;
-            mask_vector.x = 0xffffffffU;
-            mask_vector.y = 0xffffffffU;
-            mask_vector.z = 0xffffffffU;
-            mask_vector.w = 0xffffffffU;
+            // Every work-item is active for the first run, which maps them.
+            std::vector<cl_uint> all_active(div_round_up(subgroup_size, 32),
+                                            0xffffffffU);
+            mask_buffer = clCreateBuffer(
+                context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                all_active.size() * sizeof(cl_uint), all_active.data(), &error);
+            test_error_fail(error, "Unable to create divergence mask buffer");
             error = clSetKernelArg(kernel, test_params.divergence_mask_arg,
-                                   sizeof(cl_uint4), &mask_vector);
+                                   sizeof(mask_buffer), &mask_buffer);
             test_error_fail(error, "Unable to set divergence mask argument");
         }
 
@@ -1621,12 +1533,14 @@ template <typename Ty, typename Fns, size_t TSIZE = 0> struct subgroup_test
 
         if (test_params.divergence_mask_arg != -1)
         {
-            for (auto &mask : test_params.all_work_item_masks)
+            for (auto &mask : divergence_masks(subgroup_size))
             {
                 test_params.work_items_mask = mask;
-                cl_uint4 mask_vector = bs128_to_cl_uint4(mask);
-                clSetKernelArg(kernel, test_params.divergence_mask_arg,
-                               sizeof(cl_uint4), &mask_vector);
+                error =
+                    clEnqueueWriteBuffer(queue, mask_buffer, CL_TRUE, 0,
+                                         mask.words.size() * sizeof(cl_uint),
+                                         mask.words.data(), 0, NULL, NULL);
+                test_error_fail(error, "Unable to write divergence mask");
 
                 status = executor.run_and_check(test_params);
 

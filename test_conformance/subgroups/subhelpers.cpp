@@ -96,6 +96,53 @@ cl_uint4 bs128_to_cl_uint4(bs128 v)
     return r;
 }
 
+std::vector<DivergenceMask> divergence_masks(size_t subgroup_size)
+{
+    const size_t n = subgroup_size;
+    std::vector<DivergenceMask> masks;
+    auto add = [&](auto active) {
+        DivergenceMask mask;
+        mask.words.assign(div_round_up(n, 32), 0);
+        for (size_t i = 0; i < n; ++i)
+            if (active(i)) mask.words[i / 32] |= 1U << (i % 32);
+        // Leave out a mask that selects no work-item, or the same work-items
+        // as an earlier one.
+        bool none = std::all_of(mask.words.begin(), mask.words.end(),
+                                [](cl_uint w) { return w == 0; });
+        bool seen = std::any_of(
+            masks.begin(), masks.end(),
+            [&](const DivergenceMask& m) { return m.words == mask.words; });
+        if (!none && !seen) masks.push_back(mask);
+    };
+
+    // Patterns that repeat every 32 work-items, then the highest work-item of
+    // every 64 and of every 128, and all work-items: what the masks were when
+    // they had 128 bits.
+    for (cl_uint pattern : { 0xf0f0f0f0U, 0x0f0f0f0fU, 0xaaaaaaaaU, 0x55555555U,
+                             0x0f0ff0f0U, 0xff0000ffU, 0xff00ff00U, 0x00ffff00U,
+                             0x80808080U, 0x80008000U, 0x80000000U })
+        add([=](size_t i) { return (pattern >> (i % 32)) & 1; });
+    add([](size_t i) { return i % 64 == 63; });
+    add([](size_t i) { return i % 128 == 127; });
+    add([](size_t) { return true; });
+
+    // Masks placed by the sub-group's size: its first and last work-items, and
+    // at each power of two from 32 below the size, the work-items on either
+    // side alone, and all those before it or all those from it on. So in a
+    // sub-group of more than 128, the first 128 work-items are inactive while
+    // later ones are active, and the other way round.
+    add([](size_t i) { return i == 0; });
+    add([=](size_t i) { return i == n - 1; });
+    for (size_t b = 32; b < n; b *= 2)
+    {
+        add([=](size_t i) { return i == b - 1; });
+        add([=](size_t i) { return i == b; });
+        add([=](size_t i) { return i < b; });
+        add([=](size_t i) { return i >= b; });
+    }
+    return masks;
+}
+
 cl_uint4 generate_bit_mask(cl_uint subgroup_local_id,
                            const std::string &mask_type,
                            cl_uint max_sub_group_size)
