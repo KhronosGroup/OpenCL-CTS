@@ -129,7 +129,7 @@ template <typename Ty> struct BALLOT
                 std::set<int> active_work_items;
                 for (int wi_id = 0; wi_id < current_sbs; ++wi_id)
                 {
-                    if (test_params.work_items_mask.test(wi_id))
+                    if (test_params.work_items_mask.active(wi_id))
                     {
                         bool predicate = (mx[wg_offset + wi_id].s0 != 0);
                         expected_result_bs |= (bs128(predicate) << wi_id);
@@ -627,21 +627,12 @@ __kernel void test_%s(const __global Type *in, __global int4 *xy, __global Type 
 }
 )";
 std::string sub_group_ballot_source = R"(
-__kernel void test_sub_group_ballot(const __global Type *in, __global int4 *xy, __global Type *out, uint4 work_item_mask_vector) {
+__kernel void test_sub_group_ballot(const __global Type *in, __global int4 *xy, __global Type *out, const __global uint *work_item_masks) {
     uint gid = get_global_id(0);
     XY(xy,gid);
     uint subgroup_local_id = get_sub_group_local_id();
     uint elect_work_item = 1 << (subgroup_local_id % 32);
-    uint work_item_mask;
-    if (subgroup_local_id < 32) {
-        work_item_mask = work_item_mask_vector.x;
-    } else if(subgroup_local_id < 64) {
-        work_item_mask = work_item_mask_vector.y;
-    } else if(subgroup_local_id < 96) {
-        work_item_mask = work_item_mask_vector.z;
-    } else if(subgroup_local_id < 128) {
-        work_item_mask = work_item_mask_vector.w;
-    }
+    uint work_item_mask = work_item_masks[subgroup_local_id / 32];
     uint4 value = (uint4)(0, 0, 0, 0);
     if (elect_work_item & work_item_mask) {
         value = sub_group_ballot(in[gid].s0);

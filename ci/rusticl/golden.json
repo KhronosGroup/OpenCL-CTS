@@ -22,5 +22,27 @@
             "shuffle_built_in": "pass",
             "shuffle_built_in_dual_input": "pass"
         }
+    },
+    "test_subgroups": {
+        "": {
+            "barrier_functions_core": "pass",
+            "barrier_functions_ext": "skip",
+            "sub_group_info_core": "pass",
+            "sub_group_info_ext": "skip",
+            "work_item_functions_core": "pass",
+            "work_item_functions_ext": "skip",
+            "subgroup_functions_core": "pass",
+            "subgroup_functions_ext": "skip",
+            "ifp_core": "skip",
+            "ifp_ext": "skip",
+            "subgroup_functions_extended_types": "pass",
+            "subgroup_functions_non_uniform_vote": "pass",
+            "subgroup_functions_non_uniform_arithmetic": "pass",
+            "subgroup_functions_ballot": "pass",
+            "subgroup_functions_clustered_reduce": "pass",
+            "subgroup_functions_shuffle": "pass",
+            "subgroup_functions_shuffle_relative": "pass",
+            "subgroup_functions_rotate": "pass"
+        }
     }
 }

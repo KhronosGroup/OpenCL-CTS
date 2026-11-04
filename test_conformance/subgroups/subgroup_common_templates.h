@@ -558,7 +558,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
     static void log_test(const WorkGroupParams &test_params,
                          const char *extra_text)
     {
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_scan_exclusive"
                                      : "sub_group_scan_exclusive");
         log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
@@ -582,20 +582,15 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        bs128 work_items_mask = test_params.work_items_mask;
+        const DivergenceMask &work_items_mask = test_params.work_items_mask;
         int nj = div_round_up(nw, ns);
         Ty tr, rr;
         ng = ng / nw;
 
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_scan_exclusive"
                                      : "sub_group_scan_exclusive");
 
-        // for uniform case take into consideration all workitems
-        if (!work_items_mask.any())
-        {
-            work_items_mask.set();
-        }
         for (k = 0; k < ng; ++k)
         { // for each work_group
             // Map to array indexed to array indexed by local ID and sub group
@@ -611,7 +606,7 @@ template <typename Ty, ArithmeticOp operation> struct SCEX_NU
                 std::set<int> active_work_items;
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_items_mask.active(i))
                     {
                         active_work_items.insert(i);
                     }
@@ -657,7 +652,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
     static void log_test(const WorkGroupParams &test_params,
                          const char *extra_text)
     {
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_scan_inclusive"
                                      : "sub_group_scan_inclusive");
         log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
@@ -681,21 +676,16 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        bs128 work_items_mask = test_params.work_items_mask;
+        const DivergenceMask &work_items_mask = test_params.work_items_mask;
 
         int nj = div_round_up(nw, ns);
         Ty tr, rr;
         ng = ng / nw;
 
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_scan_inclusive"
                                      : "sub_group_scan_inclusive");
 
-        // for uniform case take into consideration all workitems
-        if (!work_items_mask.any())
-        {
-            work_items_mask.set();
-        }
         // std::bitset<32> mask32(use_work_items_mask);
         // for (int k) mask32.count();
         for (k = 0; k < ng; ++k)
@@ -715,7 +705,7 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
 
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_items_mask.active(i))
                     {
                         if (catch_frist_active == -1)
                         {
@@ -773,7 +763,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
     static void log_test(const WorkGroupParams &test_params,
                          const char *extra_text)
     {
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_reduce"
                                      : "sub_group_reduce");
         log_info("  %s_%s(%s)...%s\n", func_name.c_str(),
@@ -797,12 +787,12 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
         int nw = test_params.local_workgroup_size;
         int ns = test_params.subgroup_size;
         int ng = test_params.global_workgroup_size;
-        bs128 work_items_mask = test_params.work_items_mask;
+        const DivergenceMask &work_items_mask = test_params.work_items_mask;
         int nj = div_round_up(nw, ns);
         ng = ng / nw;
         Ty tr, rr;
 
-        std::string func_name = (test_params.all_work_item_masks.size() > 0
+        std::string func_name = (test_params.divergence_mask_arg != -1
                                      ? "sub_group_non_uniform_reduce"
                                      : "sub_group_reduce");
 
@@ -816,11 +806,6 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                 my[j] = y[j];
             }
 
-            if (!work_items_mask.any())
-            {
-                work_items_mask.set();
-            }
-
             for (j = 0; j < nj; ++j)
             {
                 ii = j * ns;
@@ -829,7 +814,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                 int catch_frist_active = -1;
                 for (i = 0; i < n; ++i)
                 {
-                    if (work_items_mask.test(i))
+                    if (work_items_mask.active(i))
                     {
                         if (catch_frist_active == -1)
                         {
