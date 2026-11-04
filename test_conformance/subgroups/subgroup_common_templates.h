@@ -341,6 +341,22 @@ inline subgroups::cl_half calculate(subgroups::cl_half a, subgroups::cl_half b,
     return to_half(0);
 }
 
+// The expected result of an operation over a single operand: the operand
+// itself, except for the logical operations, whose result is 1 or 0 however
+// many operands there are (the identity combined with the operand).
+template <typename Ty> inline Ty single_operand(Ty a, ArithmeticOp operation)
+{
+    switch (operation)
+    {
+        case ArithmeticOp::logical_and:
+        case ArithmeticOp::logical_or:
+        case ArithmeticOp::logical_xor:
+            return calculate<Ty>(TypeManager<Ty>::identify_limits(operation), a,
+                                 operation);
+        default: return a;
+    }
+}
+
 template <typename Ty> bool is_floating_point()
 {
     return std::is_floating_point<Ty>::value
@@ -736,7 +752,8 @@ template <typename Ty, ArithmeticOp operation> struct SCIN_NU
                         rr = my[ii + active_work_item];
                         if (active_work_items.size() == 1)
                         {
-                            tr = mx[ii + catch_frist_active];
+                            tr = single_operand<Ty>(mx[ii + catch_frist_active],
+                                                    operation);
                         }
                         else
                         {
@@ -834,7 +851,7 @@ template <typename Ty, ArithmeticOp operation> struct RED_NU
                         if (catch_frist_active == -1)
                         {
                             catch_frist_active = i;
-                            tr = mx[ii + i];
+                            tr = single_operand<Ty>(mx[ii + i], operation);
                             active_work_items.insert(i);
                             continue;
                         }

@@ -107,11 +107,11 @@ template <typename Ty, ArithmeticOp operation> struct RED_CLU
                 clusters_results.resize(clusters_counter);
 
                 // Compute target
-                Ty tr = mx[ii];
+                Ty tr = single_operand<Ty>(mx[ii], operation);
                 for (int i = 0; i < n; ++i)
                 {
                     if (i % test_params.cluster_size == 0)
-                        tr = mx[ii + i];
+                        tr = single_operand<Ty>(mx[ii + i], operation);
                     else
                         tr = calculate<Ty>(tr, mx[ii + i], operation);
                     clusters_results[i / test_params.cluster_size] = tr;
