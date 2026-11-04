@@ -191,6 +191,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
+          path-type: inherit
           update: true
           install: >-
             mingw-w64-x86_64-gcc
@@ -198,6 +199,11 @@ jobs:
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-ninja
             mingw-w64-x86_64-python
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          variant: sccache
+          key: windows-latest-msys2
       - name: Fetch dependencies
         run: |
           git clone https://github.com/KhronosGroup/OpenCL-Headers.git
@@ -210,15 +216,21 @@ jobs:
       - name: Build OpenCL ICD Loader
         run: |
           cmake -S OpenCL-ICD-Loader -B OpenCL-ICD-Loader/build -G Ninja \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DOPENCL_ICD_LOADER_HEADERS_DIR=$PWD/OpenCL-Headers
           cmake --build OpenCL-ICD-Loader/build --config Release
       - name: Build SPIRV-Tools
         run: |
-          cmake -S SPIRV-Tools -B SPIRV-Tools/build -G Ninja -DSPIRV_SKIP_TESTS=ON
+          cmake -S SPIRV-Tools -B SPIRV-Tools/build -G Ninja -DSPIRV_SKIP_TESTS=ON \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build SPIRV-Tools/build --config Release
       - name: Configure and build CTS
         run: |
           cmake -S . -B build -G Ninja \
+                -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
                 -DCL_INCLUDE_DIR=$PWD/OpenCL-Headers \
                 -DCL_LIB_DIR=$PWD/OpenCL-ICD-Loader/build \
                 -DSPIRV_INCLUDE_DIR=$PWD/SPIRV-Headers \
