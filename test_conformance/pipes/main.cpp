@@ -49,7 +49,5 @@ test_status InitCL(cl_device_id device) {
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheck(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL);
+    return runTestHarnessWithCheck(argc, argv, false, 0, InitCL);
 }

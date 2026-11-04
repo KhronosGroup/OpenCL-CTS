@@ -376,9 +376,8 @@ int main(int argc, const char *argv[])
     FPU_mode_type oldMode;
     DisableFTZ(&oldMode);
 
-    int ret = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitCL, ParseArgs);
+    int ret =
+        runTestHarnessWithCheckAndParse(argc, argv, true, 0, InitCL, ParseArgs);
 
     RestoreFPState(&oldMode);
 
@@ -428,7 +427,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
         const char *arg = argv[i];
         if (NULL == arg) break;
 
-        vlog("\t%s", arg);
         int optionFound = 0;
         removed_args.push_back(argv[i]);
         if (arg[0] == '-')
@@ -520,6 +518,24 @@ static test_status ParseArgs(int &argc, const char *argv[],
     }
     update_argc_argv_from_args_list(argList, argc, argv);
 
+    gMTdata = MTdataHolder(gRandomSeed);
+
+    return TEST_PASS;
+}
+
+static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo,
+                                                   const void *private_info,
+                                                   size_t cb, void *user_data)
+{
+    vlog("%s  (%p, %zd, %p)\n", errinfo, private_info, cb, user_data);
+}
+
+test_status InitCL(cl_device_id device)
+{
+    int error;
+    uint32_t i;
+    cl_device_type device_type;
+
     PrintArch();
 
     if (gWimpyMode)
@@ -542,24 +558,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
 
     vlog("\n---------------------------------------------------------------"
          "--------------------------------------------\n");
-
-    gMTdata = MTdataHolder(gRandomSeed);
-
-    return TEST_PASS;
-}
-
-static void CL_CALLBACK bruteforce_notify_callback(const char *errinfo,
-                                                   const void *private_info,
-                                                   size_t cb, void *user_data)
-{
-    vlog("%s  (%p, %zd, %p)\n", errinfo, private_info, cb, user_data);
-}
-
-test_status InitCL(cl_device_id device)
-{
-    int error;
-    uint32_t i;
-    cl_device_type device_type;
 
     // This takes a while, so prevent the machine from going to sleep.
     PreventSleep();

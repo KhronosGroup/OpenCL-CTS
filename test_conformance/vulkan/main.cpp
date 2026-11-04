@@ -140,8 +140,6 @@ int main(int argc, const char *argv[])
         return 0;
     }
 
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, nullptr,
-        parseParams);
+    return runTestHarnessWithCheckAndParse(argc, argv, false, 0, nullptr,
+                                           parseParams);
 }

@@ -368,9 +368,7 @@ static test_status parseArgs(int &argc, const char *argv[],
 
 int main(int argc, const char *argv[])
 {
-    int ret = runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, init_cl,
-        parseArgs);
+    int ret = runTestHarnessWithCheckAndParse(argc, argv, false, 0, init_cl,
+                                              parseArgs);
     return ret;
 }
