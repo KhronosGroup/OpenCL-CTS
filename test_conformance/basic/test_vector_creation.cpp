@@ -16,6 +16,7 @@
 #include "harness/conversions.h"
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
+#include <string>
 #include <vector>
 
 #include <CL/cl_half.h>
@@ -77,16 +78,9 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
     int max_size = output_size;
     if (DEBUG > 1) log_info("max_size: %d\n", max_size);
 
-    program[0] = '\0';
-    sprintf(program,
-            "%s\n__kernel void test_vector_creation(__global %s *src, __global "
-            "%s%s *result) {\n",
-            extension, get_explicit_type_name(type),
-            get_explicit_type_name(type),
-            (number_of_sizes == 3) ? "" : size_names[number_of_sizes - 1]);
-    total_program_length += (int)strlen(program);
-
-    char storePrefix[128], storeSuffix[128];
+    const char *type_name = get_explicit_type_name(type);
+    std::string cases;
+    bool used_loads[6][DEPTH] = {};
 
     // Start out trying sizes 1,1,1... by initializing pos array to zeros for
     // all vector sizes except 16. For 16-sizes initial_no_sizes array holds
@@ -161,19 +155,8 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
         line[0] = '\0';
         if (permutation_index >= skip_to_permutation)
         {
-            if (number_of_sizes == 3)
-            {
-                sprintf(storePrefix, "vstore3( ");
-                sprintf(storeSuffix, ", %d, result )", current_result);
-            }
-            else
-            {
-                sprintf(storePrefix, "result[%d] = ", current_result);
-                storeSuffix[0] = 0;
-            }
-
-            sprintf(line, "\t%s(%s%d)(", storePrefix,
-                    get_explicit_type_name(type), output_size);
+            sprintf(line, "\tcase %d: res = (%s%d)(", current_result, type_name,
+                    output_size);
 
             bool covers_middle = false;
             int offset = 0;
@@ -181,21 +164,23 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
             {
                 int start = offset;
                 if (pos[i] == 0)
-                    sprintf(line + strlen(line), "src[%d]", offset);
+                    sprintf(line + strlen(line), "v1_%d", offset);
                 else
-                    sprintf(line + strlen(line), "vload%s(0,src+%d)",
-                            size_names[pos[i]], offset);
+                    sprintf(line + strlen(line), "v%s_%d", size_names[pos[i]],
+                            offset);
                 offset += sizes[pos[i]];
                 if (start <= ((output_size / 2) - 1)
                     && offset > (output_size / 2))
                     covers_middle = true;
                 if (i < (vloads - 1)) sprintf(line + strlen(line), ",");
             }
-            sprintf(line + strlen(line), ")%s;\n", storeSuffix);
+            sprintf(line + strlen(line), "); break;\n");
 
             if (covers_middle || vloads < 4 || vloads == output_size)
             {
-                strcat(program, line);
+                for (int i = 0, off = 0; i < vloads; off += sizes[pos[i++]])
+                    used_loads[pos[i]][off] = true;
+                cases += line;
                 total_vloads += vloads;
                 current_result++;
                 total_program_length += (int)strlen(line);
@@ -241,8 +226,39 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
 
         // Continue until we are done.
     }
-    strcat(program, "}\n\n"); // log_info("%s\n", program);
-    total_program_length += 3;
+    int written = sprintf(
+        program,
+        "%s\n__kernel void test_vector_creation(__global %s *src, __global "
+        "%s%s *result) {\n"
+        "\tsize_t tid = get_global_id(0);\n",
+        extension, type_name, type_name,
+        (number_of_sizes == 3) ? "" : size_names[number_of_sizes - 1]);
+    for (int s = 0; s < number_of_sizes; s++)
+    {
+        for (int off = 0; off <= max_size - sizes[s]; off++)
+        {
+            if (!used_loads[s][off]) continue;
+            if (s == 0)
+                written += sprintf(program + written, "\t%s v1_%d = src[%d];\n",
+                                   type_name, off, off);
+            else
+                written += sprintf(program + written,
+                                   "\t%s%s v%s_%d = vload%s(0,src+%d);\n",
+                                   type_name, size_names[s], size_names[s], off,
+                                   size_names[s], off);
+        }
+    }
+    written +=
+        sprintf(program + written,
+                "\t%s%s res;\n\tswitch (tid) {\n%s"
+                "\tdefault: return;\n\t}\n",
+                type_name, size_names[number_of_sizes - 1], cases.c_str());
+    if (number_of_sizes == 3)
+        written +=
+            sprintf(program + written, "\tvstore3(res, tid, result);\n}\n\n");
+    else
+        written += sprintf(program + written, "\tresult[tid] = res;\n}\n\n");
+    total_program_length = written;
     if (DEBUG)
         log_info(
             "\t\t(Program for vector type %s%s contains %d vector creations, "
@@ -351,6 +367,7 @@ REGISTER_TEST(vector_creation)
         for (size_t size_index = 1; size_index < vecSizes.size(); size_index++)
         {
             size_t global[] = { 1, 1, 1 };
+            size_t local[] = { 1, 1, 1 };
             bool vector_size_completed = false;
             int total_number_of_results = 0;
 
@@ -410,8 +427,9 @@ REGISTER_TEST(vector_creation)
                     break;
                 }
 
+                global[0] = number_of_results;
                 error = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, global,
-                                               NULL, 0, NULL, NULL);
+                                               local, 0, NULL, NULL);
                 if (error)
                 {
                     print_error(error, "clEnqueueNDRangeKernel failed");
@@ -468,7 +486,7 @@ REGISTER_TEST(vector_creation)
                         // ugly.
                         char search[32] = { 0 };
                         char found_line[1024] = { 0 };
-                        sprintf(search, "result[%d] = (", i);
+                        sprintf(search, "case %d: res = (", i);
                         char *start_loc = strstr(program_source.data(), search);
                         if (start_loc == NULL)
                             log_error("Failed to find program source for "
