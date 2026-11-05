@@ -184,7 +184,11 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
                 total_vloads += vloads;
                 current_result++;
                 total_program_length += (int)strlen(line);
-                if (total_program_length > MAX_CODE_SIZE)
+                // rusticl/llvmpipe lowers switch statements into nested if-else
+                // chains and hits its control-flow nesting limit (80) at 79
+                // cases.
+                if (total_program_length > MAX_CODE_SIZE
+                    || current_result >= 64)
                 {
                     aborted_due_to_size = 1;
                     done = 1;
