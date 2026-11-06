@@ -31,6 +31,7 @@
 #include <iostream>
 #include <string.h>
 #include <inttypes.h>
+
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -143,13 +144,6 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
 
         buffer.reset();
 
-        // Passing valid extMemProperties and buffersize
-        buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
-                                              1, bufferSize, NULL, &errNum);
-        test_error(errNum, "Unable to create buffer with Properties");
-
-        buffer.reset();
-
         // Not passing external memory handle
         std::vector<cl_mem_properties> extMemProperties2{
 #ifdef _WIN32
@@ -177,6 +171,13 @@ struct ConsistencyExternalBufferTest : public VulkanTestBase
                                               1, 0, NULL, &errNum);
         test_failure_error(errNum, CL_INVALID_BUFFER_SIZE,
                            "Should return CL_INVALID_BUFFER_SIZE");
+
+        buffer.reset();
+
+        // Passing valid extMemProperties and buffersize
+        buffer = clCreateBufferWithProperties(context, extMemProperties.data(),
+                                              1, bufferSize, NULL, &errNum);
+        test_error(errNum, "Unable to create buffer with Properties");
 
         return TEST_PASS;
     }
@@ -308,13 +309,6 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
 
         clMemWrapper image;
 
-        // Pass valid properties, image_desc and image_format
-        image = clCreateImageWithProperties(
-            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
-            &image_desc, NULL /* host_ptr */, &errNum);
-        test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
         // Passing image_format as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, NULL,
@@ -335,6 +329,12 @@ struct ConsistencyExternalImageTest : public VulkanTestBase
                            "CL_INVALID_IMAGE_DESCRIPTOR "
                            "when image desc passed as NULL");
         image.reset();
+
+        // Pass valid properties, image_desc and image_format
+        image = clCreateImageWithProperties(
+            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
+            &image_desc, NULL /* host_ptr */, &errNum);
+        test_error(errNum, "Unable to create Image with Properties");
 
         return TEST_PASS;
     }
