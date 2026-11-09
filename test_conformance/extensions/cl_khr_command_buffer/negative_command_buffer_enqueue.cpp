@@ -465,9 +465,9 @@ struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
 
         error = clEnqueueCommandBufferKHR(1, &second_device_queue,
                                           command_buffer, 0, nullptr, nullptr);
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+        test_failure_error_ret(error, CL_INVALID_DEVICE,
                                "clEnqueueCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               "CL_INVALID_DEVICE",
                                TEST_FAIL);
         return CL_SUCCESS;
     }
