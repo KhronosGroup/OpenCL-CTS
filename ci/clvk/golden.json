@@ -7,9 +7,9 @@
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
+            "conformance_version": "pass",
             "device_uuid": "pass",
             "extended_versioning": "pass",
-            "conformance_version": "pass",
             "pci_bus_info": "skip"
         }
     }
