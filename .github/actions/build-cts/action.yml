@@ -15,8 +15,6 @@ runs:
         repository: KhronosGroup/SPIRV-Headers
         path: spv-headers
         fetch-depth: 1
-    - name: Setup Ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
     - name: Install Vulkan SDK
       uses: humbletim/install-vulkan-sdk@main
       with:
