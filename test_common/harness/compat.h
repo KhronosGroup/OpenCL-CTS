@@ -392,6 +392,7 @@ EXTERN_C int __builtin_clz(unsigned int pattern);
 
 #if defined(__MINGW32__)
 #include <Windows.h>
+#include <unistd.h> // usleep
 #define sleep(sec) Sleep((sec)*1000)
 #endif
 
