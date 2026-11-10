@@ -298,7 +298,7 @@ const char *GetImageTypeName(cl_mem_object_type type)
     }
 }
 
-const char *GetDataVectorString(void *dataBuffer, size_t typeSize,
+const char *GetDataVectorString(const void *dataBuffer, size_t typeSize,
                                 size_t vecSize, char *buffer)
 {
     static char scratch[1024];
@@ -306,7 +306,7 @@ const char *GetDataVectorString(void *dataBuffer, size_t typeSize,
 
     if (buffer == NULL) buffer = scratch;
 
-    unsigned char *p = (unsigned char *)dataBuffer;
+    const unsigned char *p = (const unsigned char *)dataBuffer;
     char *bPtr;
 
     buffer[0] = 0;
