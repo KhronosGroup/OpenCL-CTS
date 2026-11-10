@@ -164,8 +164,12 @@ static int offline_get_program_with_il(clProgramWrapper &prog,
     std::string outputFilename = spvBinariesPath + slash + std::string(prog_name);
     std::string sourceFilename = outputFilename +  spvExt;
 
-    std::string scriptArgs = sourceFilename + " " + outputFilename + " "
-        + gAddrWidth + " " + outputTypeStr;
+    std::string scriptArgs =
+        sourceFilename + " " +
+        outputFilename + " " +
+        gAddrWidth + " " +
+        outputTypeStr + " " +
+        "-cl-std=CL2.0";
 
     std::string scriptToRunString = defaultScript + scriptArgs;
 
