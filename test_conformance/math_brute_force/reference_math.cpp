@@ -2185,7 +2185,12 @@ static long double STIR[9] = {
     8.333333333333331800504E-2L,
 };
 
+#if LDBL_MANT_DIG == DBL_MANT_DIG && LDBL_MAX_EXP == DBL_MAX_EXP
+// powl(x, x - 0.5) overflows a binary64 long double near x = 143.
+#define MAXSTIR 140.0L
+#else
 #define MAXSTIR 1024.0L
+#endif
 static const long double SQTPI = 2.50662827463100050242E0L;
 
 /* 1/tgamma(x) = z P(z)
@@ -2220,6 +2225,7 @@ static long double SN[9] = {
 static const long double PIL = 3.1415926535897932384626L;
 
 static long double stirf(long double);
+static long double rstirf(long double, long double);
 
 long double __polevll(long double x, void *PP, int n)
 {
@@ -2272,10 +2278,36 @@ static long double stirf(long double x)
     return (y);
 }
 
+/* scale / Gamma(x) for x > 13. scale is applied between the two half-power
+ * divisions so the result does not overflow or go subnormal too early. */
+static long double rstirf(long double x, long double scale)
+{
+    long double w, v, ey;
+
+    ey = expl(x);
+    if (!isfinite(ey)) return (0.0L);
+    w = 1.0L / x;
+    if (x > 1024.0L)
+        w = (((((6.97281375836585777429E-5L * w + 7.84039221720066627474E-4L)
+                    * w
+                - 2.29472093621399176955E-4L)
+                   * w
+               - 2.68132716049382716049E-3L)
+                  * w
+              + 3.47222222222222222222E-3L)
+                 * w
+             + 8.33333333333333333333E-2L)
+                * w
+            + 1.0L;
+    else
+        w = 1.0L + w * __polevll(w, STIR, 8);
+    v = powl(x, 0.5L * x - 0.25L);
+    return ((((ey / v) * scale) / v) / (SQTPI * w));
+}
+
 long double olm_tgammal(long double x)
 {
     long double p, q, z;
-    int i;
 
     if (isnan(x)) return (NAN);
     if (x == INFINITY) return (INFINITY);
@@ -2286,13 +2318,12 @@ long double olm_tgammal(long double x)
     if (q > 13.0L)
     {
         int sign = 1;
-        if (q > MAXGAML) goto goverf;
         if (x < 0.0L)
         {
             p = floorl(q);
             if (p == q) return (x - x) / (x - x);
-            i = p;
-            if ((i & 1) == 0) sign = -1;
+            // |x| can exceed INT_MAX here, so avoid an int cast.
+            if (fmodl(p, 2.0L) == 0.0L) sign = -1;
             z = q - p;
             if (z > 0.5L)
             {
@@ -2300,16 +2331,13 @@ long double olm_tgammal(long double x)
                 z = q - p;
             }
             z = q * sinl(PIL * z);
-            z = fabsl(z) * stirf(q);
-            if (z <= PIL / LDBL_MAX)
-            {
-            goverf:
-                return (sign * INFINITY);
-            }
-            z = PIL / z;
+            z = fabsl(z);
+            // Reciprocal form: large |x| underflows instead of overflowing.
+            z = rstirf(q, PIL / z);
         }
         else
         {
+            if (q > MAXGAML) return (sign * INFINITY);
             z = stirf(x);
         }
         return (sign * z);
@@ -2370,22 +2398,6 @@ double reference_tgamma(double x)
         if (fx == std::floor(fx))
         {
             return cl_make_nan();
-        }
-
-        // The gamma function satisfies the reflection formula:
-        //   tgamma(x) = pi / (sin(pi*x) * tgamma(1-x))
-        // For large negative non-integer arguments, tgamma(1-x) should overflow
-        // to +inf, causing the reflection formula pi/(sin(pi*x)*tgamma(1-x)) to
-        // collapse to +/-0. However, reference olm_tgamma does not handle this
-        // case correctly, so it must be handled externally. The sign is
-        // determined analytically from the alternating sign rule: for x in
-        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1).
-
-        if (x < -MAXGAML)
-        {
-            long n = (long)std::floor(-fx);
-            bool negative = (n % 2 == 0);
-            return negative ? -0.0 : 0.0;
         }
     }
     return olm_tgammal(x);
@@ -6096,22 +6108,6 @@ long double reference_tgammal(long double x)
         if (x == std::floor(x))
         {
             return cl_make_nan();
-        }
-
-        // The gamma function satisfies the reflection formula:
-        //   tgamma(x) = pi / (sin(pi*x) * tgamma(1-x))
-        // For large negative non-integer arguments, tgamma(1-x) should overflow
-        // to +inf, causing the reflection formula pi/(sin(pi*x)*tgamma(1-x)) to
-        // collapse to +/-0. However, reference olm_tgamma does not handle this
-        // case correctly, so it must be handled externally. The sign is
-        // determined analytically from the alternating sign rule: for x in
-        // (-(n+1), -n), sign(tgamma(x)) = (-1)^(n+1).
-
-        if (x < -MAXGAML)
-        {
-            long n = (long)std::floor(-x);
-            bool negative = (n % 2 == 0);
-            return negative ? -0.0L : 0.0L;
         }
     }
     return olm_tgammal(x);
