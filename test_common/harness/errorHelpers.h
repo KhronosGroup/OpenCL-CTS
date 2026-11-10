@@ -211,7 +211,7 @@ cl_int OutputBuildLogs(cl_program program, cl_uint num_devices,
 
 // NON-REENTRANT UNLESS YOU PROVIDE A BUFFER PTR (pass null to use static
 // storage, but it's not reentrant then!)
-extern const char *GetDataVectorString(void *dataBuffer, size_t typeSize,
+extern const char *GetDataVectorString(const void *dataBuffer, size_t typeSize,
                                        size_t vecSize, char *buffer);
 
 #if defined(_WIN32) && !defined(__MINGW32__)

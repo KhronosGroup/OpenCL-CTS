@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 
-#include <iomanip>
+#include <cstring>
+#include <sstream>
 #include <vector>
 #include "testBase.h"
 #include "harness/conversions.h"
@@ -281,48 +282,40 @@ char *get_order_name(ExplicitType vecType, size_t inVecSize, size_t outVecSize,
     return orderName;
 }
 
-void print_hex_mem_dump(const unsigned char *inDataPtr,
-                        const unsigned char *inDataPtr2,
-                        const unsigned char *expected,
-                        const unsigned char *outDataPtr, size_t inVecSize,
-                        size_t outVecSize, size_t typeSize)
+static std::string format_shuffle_vector_as_hex(const void *data,
+                                                size_t elementCount,
+                                                ExplicitType type)
 {
-    auto byte_to_hex_str = [](unsigned char v) {
-        // Use a new stream to avoid manipulating state of outer stream.
-        std::ostringstream ss;
-        ss << std::setfill('0') << std::setw(2) << std::right << std::hex << +v;
-        return ss.str();
-    };
+    const size_t elementSize = get_explicit_type_size(type);
+    std::vector<char> elements(elementCount * (2 * elementSize + 1) + 1);
+    std::ostringstream values;
+    values << get_explicit_type_name(type);
+    if (elementCount > 1) values << elementCount;
+    values << " ["
+           << GetDataVectorString(data, elementSize, elementCount,
+                                  elements.data())
+           << ']';
+    return values.str();
+}
 
-    std::ostringstream error;
-    error << "      Source: ";
-    for (size_t j = 0; j < inVecSize * typeSize; j++)
-    {
-        error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr[j])
-              << " ";
-    }
-    if (inDataPtr2 != NULL)
-    {
-        error << "\n    Source 2: ";
-        for (size_t j = 0; j < inVecSize * typeSize; j++)
-        {
-            error << (j % typeSize ? "" : " ") << byte_to_hex_str(inDataPtr2[j])
-                  << " ";
-        }
-    }
-    error << "\n    Expected: ";
-    for (size_t j = 0; j < outVecSize * typeSize; j++)
-    {
-        error << (j % typeSize ? "" : " ") << byte_to_hex_str(expected[j])
-              << " ";
-    }
-    error << "\n      Actual: ";
-    for (size_t j = 0; j < outVecSize * typeSize; j++)
-    {
-        error << (j % typeSize ? "" : " ") << byte_to_hex_str(outDataPtr[j])
-              << " ";
-    }
-    log_info("%s\n", error.str().c_str());
+static void log_shuffle_failure_values(const unsigned char *source,
+                                       const unsigned char *source2,
+                                       const unsigned char *expected,
+                                       const unsigned char *actual,
+                                       size_t sourceWidth, size_t resultWidth,
+                                       ExplicitType type)
+{
+    log_error("    Source: %s\n",
+              format_shuffle_vector_as_hex(source, sourceWidth, type).c_str());
+    if (source2)
+        log_error(
+            "  Source 2: %s\n",
+            format_shuffle_vector_as_hex(source2, sourceWidth, type).c_str());
+    log_error(
+        "  Expected: %s\n",
+        format_shuffle_vector_as_hex(expected, resultWidth, type).c_str());
+    log_error("    Actual: %s\n",
+              format_shuffle_vector_as_hex(actual, resultWidth, type).c_str());
 }
 
 std::string generate_shuffle_mask(size_t maskSize, const ShuffleOrder *order)
@@ -809,19 +802,17 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
 
         if (memcmp(expected, outDataPtr, outVecSize * typeSize) != 0)
         {
-            log_error(" ERROR: Shuffle test %d FAILED for %s (memory hex dump "
-                      "follows)\n",
-                      (int)i,
+            log_error("ERROR: Shuffle test %d FAILED for %s\n", (int)i,
                       get_order_name(vecType, inVecSize, outVecSize,
                                      inOrderIdx[i], outOrderIdx[i],
                                      lengthToUse[i], d, inUseNumerics,
                                      outUseNumerics));
 
-            print_hex_mem_dump(
+            log_shuffle_failure_values(
                 inDataPtr,
                 (shuffleMode == kBuiltInDualInputFnMode) ? inSecondDataPtr
                                                          : NULL,
-                expected, outDataPtr, inVecSize, outVecSize, typeSize);
+                expected, outDataPtr, inVecSize, outVecSize, vecType);
 
             if ((shuffleMode == kBuiltInFnMode)
                 || (shuffleMode == kBuiltInDualInputFnMode))
@@ -830,7 +821,7 @@ int test_shuffle_dual_kernel(cl_context context, cl_command_queue queue,
                 // have to regen it to print it
                 std::string maskString = generate_shuffle_mask(
                     outVecSize, (outOrderIdx != NULL) ? &outOrderIdx[i] : NULL);
-                log_error("        Mask:  %s\n", maskString.c_str());
+                log_error("      Mask: %s\n", maskString.c_str());
             }
 
             ret++;
