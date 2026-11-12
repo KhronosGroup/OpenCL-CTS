@@ -463,11 +463,12 @@ struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
         cl_int error = clFinalizeCommandBufferKHR(command_buffer);
         test_error(error, "clFinalizeCommandBufferKHR failed");
 
-        error = clEnqueueCommandBufferKHR(1, &second_device_queue,
-                                          command_buffer, 0, nullptr, nullptr);
-        test_failure_error_ret(error, CL_INCOMPATIBLE_COMMAND_QUEUE_KHR,
+        // Enqueue command-buffer passing the queue for the second device
+        error = clEnqueueCommandBufferKHR(1, &device_queues[1], command_buffer,
+                                          0, nullptr, nullptr);
+        test_failure_error_ret(error, CL_INVALID_DEVICE,
                                "clEnqueueCommandBufferKHR should return "
-                               "CL_INCOMPATIBLE_COMMAND_QUEUE_KHR",
+                               "CL_INVALID_DEVICE",
                                TEST_FAIL);
         return CL_SUCCESS;
     }
@@ -477,22 +478,24 @@ struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
         cl_int error = BasicCommandBufferTest::SetUp(elements);
         test_error(error, "BasicCommandBufferTest::SetUp failed");
 
-        cl_device_id second_device = nullptr;
-        for (auto query_device : devices)
-        {
-            if (query_device != device)
-            {
-                second_device = query_device;
-                break;
-            }
-        }
+        // Create a shared context for the two test devices
+        cl_device_id devices[2] = { device, different_device };
+        test_context = clCreateContext(NULL, 2, devices, NULL, NULL, &error);
+        test_error(error, "Unable to create shared context");
 
-        test_assert_error(second_device != nullptr,
-                          "Second device not found for testing");
-
-        second_device_queue =
-            clCreateCommandQueue(context, second_device, 0, &error);
+        // Create a queue per-device with the newly created context
+        device_queues[0] =
+            clCreateCommandQueue(test_context, device, 0, &error);
         test_error(error, "clCreateCommandQueue failed");
+
+        device_queues[1] =
+            clCreateCommandQueue(test_context, different_device, 0, &error);
+        test_error(error, "clCreateCommandQueue failed");
+
+        // Create a command-buffer with the first queue
+        command_buffer =
+            clCreateCommandBufferKHR(1, &device_queues[0], nullptr, &error);
+        test_error(error, "clCreateCommandBufferKHR failed");
 
         return CL_SUCCESS;
     }
@@ -501,29 +504,14 @@ struct EnqueueCommandBufferInconsistentDevice : public BasicCommandBufferTest
     {
         if (BasicCommandBufferTest::Skip()) return true;
 
-        size_t context_devices_size;
-        cl_int error = clGetContextInfo(context, CL_CONTEXT_DEVICES, 0, NULL,
-                                        &context_devices_size);
-        test_error(error, "clGetContextInfo failed");
-
-        size_t num_devices = context_devices_size / sizeof(cl_device_id);
-
-        if (num_devices < 2)
-        {
-            // We need a second device for test
-            return true;
-        }
-
-        devices.resize(num_devices);
-        error = clGetContextInfo(context, CL_CONTEXT_DEVICES, num_devices,
-                                 devices.data(), nullptr);
-        test_error(error, "clGetContextInfo failed");
-
-        return false;
+        // We need a second device for test
+        different_device = GetOpposingDevice(device);
+        return !different_device || device == different_device;
     }
 
-    std::vector<cl_device_id> devices;
-    clCommandQueueWrapper second_device_queue = nullptr;
+    cl_device_id different_device = nullptr;
+    clCommandQueueWrapper device_queues[2] = { nullptr, nullptr };
+    clContextWrapper test_context = nullptr;
 };
 };
 
