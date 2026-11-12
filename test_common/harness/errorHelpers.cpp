@@ -737,6 +737,7 @@ const char *subtests_to_skip_with_offline_compiler[] = {
     "unload_build_info",
     "unload_program_binaries",
     "features_macro",
+    "features_macro_float_atomics",
     "progvar_prog_scope_misc",
     "library_function"
 };
