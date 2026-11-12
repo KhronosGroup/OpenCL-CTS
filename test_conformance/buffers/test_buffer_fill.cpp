@@ -1,6 +1,6 @@
 //
 // Copyright (c) 2017 The Khronos Group Inc.
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <memory>
 
 #include "testBase.h"
 #include "harness/errorHelpers.h"
@@ -1510,3 +1511,51 @@ REGISTER_TEST(buffer_fill_float)
     return err;
 
 }   // end test_buffer_float_fill()
+
+
+REGISTER_TEST(buffer_fill_pattern_lifetime)
+{
+    cl_int err;
+    const size_t buffer_bytes = num_elements * sizeof(cl_int);
+
+    clMemWrapper buffer;
+    clEventWrapper user_event;
+    std::unique_ptr<cl_int[]> pattern(new cl_int[1]);
+    std::vector<cl_int> host_buffer(num_elements);
+
+    buffer =
+        clCreateBuffer(context, CL_MEM_READ_WRITE, buffer_bytes, nullptr, &err);
+    test_error_fail(err, "clCreateBuffer failed");
+
+    user_event = clCreateUserEvent(context, &err);
+    test_error_fail(err, "clCreateUserEvent failed");
+
+    pattern[0] = TEST_PRIME_INT;
+
+    err = clEnqueueFillBuffer(queue, buffer, pattern.get(), sizeof(cl_int), 0,
+                              buffer_bytes, 1, &user_event, nullptr);
+    test_error_fail(err, "clEnqueueFillBuffer failed");
+
+    /* Modify pattern while command is blocked */
+    pattern[0] = static_cast<cl_int>(0xDEADBEEF);
+
+    err = clSetUserEventStatus(user_event, CL_COMPLETE);
+    test_error_fail(err, "clSetUserEventStatus failed");
+
+    err = clEnqueueReadBuffer(queue, buffer, CL_TRUE, 0, buffer_bytes,
+                              host_buffer.data(), 0, nullptr, nullptr);
+    test_error_fail(err, "clEnqueueReadBuffer failed");
+
+    for (int i = 0; i < num_elements; i++)
+    {
+        if (host_buffer[i] != TEST_PRIME_INT)
+        {
+            log_error("Verification failed at index %d: expected 0x%08x, got "
+                      "0x%08x\n",
+                      i, TEST_PRIME_INT, host_buffer[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    return TEST_PASS;
+} // end test_buffer_fill_pattern_lifetime()
