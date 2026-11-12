@@ -557,6 +557,7 @@ static int verify_fill_struct( void *ptr1, void *ptr2, int n )
     return 0;
 }
 
+
 static int test_buffer_fill(cl_device_id deviceID, cl_context context,
                             cl_command_queue queue, int num_elements,
                             size_t size, char *type, int loops, void *inptr[5],
@@ -707,6 +708,7 @@ static int test_buffer_fill(cl_device_id deviceID, cl_context context,
     return total_errors;
 
 }   // end test_buffer_fill()
+
 
 REGISTER_TEST(buffer_fill_struct)
 {

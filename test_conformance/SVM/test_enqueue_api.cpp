@@ -372,13 +372,13 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     err =
         create_cl_objects(device, nullptr, &contextWrapper, nullptr, &queues[0],
                           &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
-    test_error_fail(err, "Failed to create cl objects")
+    test_error_fail(err, "Failed to create cl objects");
 
-        context = contextWrapper;
+    context = contextWrapper;
     queue = queues[0];
 
     svm_ptr = clSVMWrapper(context, svm_size, CL_MEM_READ_WRITE);
-    test_error_fail(!svm_ptr(), "clSVMAlloc failed");
+    test_assert_error(svm_ptr(), "clSVMAlloc failed");
 
     user_event = clCreateUserEvent(context, &err);
     test_error_fail(err, "clCreateUserEvent failed");
@@ -415,7 +415,7 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     test_error_fail(err, "clEnqueueSVMUnmap failed");
 
     err = clFinish(queue);
-    test_error_fail(err, "clEnqueueSVMUnmap failed");
+    test_error_fail(err, "clFinish failed");
 
     return TEST_PASS;
 }
