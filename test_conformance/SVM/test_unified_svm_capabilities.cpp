@@ -19,8 +19,6 @@
 #include <memory>
 #include <numeric>
 
-#define CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR 0x1078
-
 struct UnifiedSVMCapabilities : UnifiedSVMBase
 {
     UnifiedSVMCapabilities(cl_context context, cl_device_id device,
@@ -457,7 +455,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
     cl_int test_CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR(cl_uint typeIndex)
     {
         cl_int err;
-
+        const auto caps = deviceUSVMCaps[typeIndex];
         auto mem = get_usvm_wrapper<cl_int>(typeIndex);
         err = mem->allocate(num_elements);
         test_error(err, "could not allocate usvm memory");
@@ -469,17 +467,12 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         }
 
         auto ptr = mem->get_ptr();
-        size_t svm_type_count = 0;
-        err = clGetDeviceInfo(device,
-                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR, 0,
-                              nullptr, &svm_type_count);
-        test_error(err, "could not query ConcurrentAccess granularity count");
-        std::vector<size_t> granularity(svm_type_count);
-        err = clGetDeviceInfo(device,
-                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR,
-                              svm_type_count, granularity.data(), nullptr);
-        test_error(err, "could not query ConcurrentAccess granularity");
-        int granularity_integer = static_cast<int>(granularity[typeIndex]);
+        int granularity_integer =
+            static_cast<int>(deviceConcurrentAccessAtomSizes[typeIndex]);
+
+        test_assert_error(granularity_integer != 0,
+                          "ConcurrentAccess atom size should not be 0 for an "
+                          "SVM type with ConcurrentAccess capability");
 
         err |= clSetKernelArgSVMPointer(kernel_ConcurrentAccessWrite, 0, ptr);
         err |=
@@ -493,13 +486,44 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                                      nullptr, nullptr);
         test_error(err, "clEnqueueNDRangeKernel failed");
 
-        for (int i = granularity_integer; i < num_elements;
-             i += (2 * granularity_integer))
+        err = clFlush(queue);
+        test_error(err, "clFlush failed");
+
+        if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
         {
-            for (int j = i; j < (i + granularity[typeIndex]); j++)
+            volatile int* volatile_ptr = ptr;
+
+            for (int i = granularity_integer; i < num_elements;
+                 i += 2 * granularity_integer)
             {
-                ptr[j] = j + 1;
+                int end = i + granularity_integer;
+
+                if (end > num_elements)
+                {
+                    end = num_elements;
+                }
+
+                for (int j = i; j < end; ++j)
+                {
+                    for (unsigned int busy = 0; busy < 1024u; ++busy)
+                    {
+                        int value = volatile_ptr[j];
+
+                        if ((value & 1) == 0)
+                            volatile_ptr[j] = value | 1;
+                        else
+                            volatile_ptr[j] = value & ~1;
+                    }
+
+                    volatile_ptr[j] = j + 1;
+                }
             }
+        }
+        else
+        {
+            log_info("Cannot test for concurrent access on this SVM type since "
+                     "no host write access, skipping subtest.\n");
+            return CL_SUCCESS;
         }
 
         err = clFinish(queue);
@@ -756,8 +780,23 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const char* programString = R"(
             kernel void test_ConcurrentAccessWrite(global int* dst, int granularity)
             {
-                if((get_global_id(0)/granularity)%2 == 0){
-                    dst[get_global_id(0)] = get_global_id(0) + 1;
+                uint work_item_index = get_global_id(0);
+
+                if ((work_item_index / (uint)granularity) % 2u == 0u)
+                {
+                    volatile global int* ptr = dst + work_item_index;
+
+                    for (uint i = 0; i < 1024u; ++i)
+                    {
+                        int value = *ptr;  // volatile read
+
+                        if ((value & 1) == 0)
+                            *ptr = value | 1;   // volatile write: set bit 0
+                        else
+                            *ptr = value & ~1;  // volatile write: clear bit 0
+                    }
+
+                    *ptr = (int)work_item_index + 1; // final volatile write
                 }
             }
         )";
