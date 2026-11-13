@@ -30,6 +30,7 @@
 #include <iostream>
 #include <string.h>
 #include <inttypes.h>
+
 #include "harness/testHarness.h"
 #include "harness/typeWrappers.h"
 #include "harness/deviceInfo.h"
@@ -167,13 +168,6 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
 
         clMemWrapper image;
 
-        // Pass valid properties, image_desc and image_format
-        image = clCreateImageWithProperties(
-            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
-            &image_desc, NULL /* host_ptr */, &errNum);
-        test_error(errNum, "Unable to create Image with Properties");
-        image.reset();
-
         // Passing image_format as NULL
         image = clCreateImageWithProperties(context, extMemProperties.data(),
                                             CL_MEM_READ_WRITE, NULL,
@@ -194,6 +188,12 @@ struct ConsistencyExternalImage3DTest : public VulkanTestBase
                            "CL_INVALID_IMAGE_DESCRIPTOR "
                            "when image desc passed as NULL");
         image.reset();
+
+        // Pass valid properties, image_desc and image_format
+        image = clCreateImageWithProperties(
+            context, extMemProperties.data(), CL_MEM_READ_WRITE, &img_format,
+            &image_desc, NULL /* host_ptr */, &errNum);
+        test_error(errNum, "Unable to create Image with Properties");
 
         return TEST_PASS;
     }
