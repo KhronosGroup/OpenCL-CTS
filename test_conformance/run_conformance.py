@@ -18,6 +18,7 @@ import time
 import tempfile
 
 DEBUG = 0
+conformance_results_dir = None
 
 log_file_name = "opencl_conformance_results_" + time.strftime("%Y-%m-%d_%H-%M", time.localtime()) + ".log"
 process_pid = 0
@@ -28,12 +29,14 @@ seconds_between_status_updates = 60 * 60 * 24 * 7  # effectively never
 
 # Help info
 def write_help_info():
-    print("run_conformance.py test_list [CL_DEVICE_TYPE(s) to test] [partial-test-names, ...] [log=path/to/log/file/]")
+    print("run_conformance.py test_list [CL_DEVICE_TYPE(s) to test] [partial-test-names, ...] [log=path/to/log/file/] [--conformance-results-dir=<DIR>]")
     print(" test_list - the .csv file containing the test names and commands to run the tests.")
     print(" [partial-test-names, ...] - optional partial strings to select a subset of the tests to run.")
     print(" [CL_DEVICE_TYPE(s) to test] - list of CL device types to test, default is CL_DEVICE_TYPE_DEFAULT.")
     print(" [log=path/to/log/file/] - provide a path for the test log file, default is in the current directory.")
     print("   (Note: spaces are not allowed in the log file path.")
+    print(" [--conformance-results-dir=<DIR>] - if given, set CL_CONFORMANCE_RESULTS_FILENAME to <DIR>/<test>.json")
+    print("   before each test, so test binaries write machine-readable results there for later comparison.")
 
 
 # Get the time formatted nicely
@@ -78,7 +81,7 @@ def get_tests(filename, devices_to_test):
     return tests
 
 
-def run_test_checking_output(current_directory, test_dir, log_file):
+def run_test_checking_output(current_directory, test_dir, log_file, conformance_results_file=None):
     global process_pid, seconds_between_status_updates
     failures_this_run = 0
     start_time = time.time()
@@ -95,6 +98,10 @@ def run_test_checking_output(current_directory, test_dir, log_file):
     if os.path.exists(current_directory + os.sep + program_to_run):
         os.chdir(os.path.dirname(current_directory + os.sep + test_dir_without_args))
         try:
+            if conformance_results_file:
+                os.environ['CL_CONFORMANCE_RESULTS_FILENAME'] = conformance_results_file
+            elif 'CL_CONFORMANCE_RESULTS_FILENAME' in os.environ:
+                del os.environ['CL_CONFORMANCE_RESULTS_FILENAME']
             if DEBUG: p = subprocess.Popen("", stderr=subprocess.STDOUT, stdout=subprocess.PIPE, shell=True)
             else: p = subprocess.Popen(current_directory + os.sep + test_dir, stderr=output_fd, stdout=output_fd, shell=True)
         except OSError:
@@ -209,6 +216,7 @@ def run_test_checking_output(current_directory, test_dir, log_file):
 def run_tests(tests):
     global curent_directory
     global process_pid
+    global conformance_results_dir
     # Run the tests
     failures = 0
     previous_test = None
@@ -236,7 +244,11 @@ def run_tests(tests):
         start_time = time.time()
         try:
             process_pid = 0
-            result = run_test_checking_output(current_directory, test_dir, log_file)
+            conformance_results_file = None
+            if conformance_results_dir:
+                safe_name = re.sub(r'[^A-Za-z0-9_-]', '_', test_name)
+                conformance_results_file = os.path.join(conformance_results_dir, safe_name + ".json")
+            result = run_test_checking_output(current_directory, test_dir, log_file, conformance_results_file)
         except KeyboardInterrupt:
             # Catch an interrupt from the user
             write_screen_log("\nFAILED: Execution interrupted.  Killing test process, but not aborting full test run.")
@@ -292,6 +304,11 @@ for arg in sys.argv:
     match = re.search("log=(\S+)", arg)
     if match:
         log_file_name = match.group(1).rstrip('/') + os.sep + log_file_name
+    match = re.search(r"--conformance-results-dir=(\S+)", arg)
+    if match:
+        conformance_results_dir = match.group(1)
+        if not os.path.exists(conformance_results_dir):
+            os.makedirs(conformance_results_dir)
 try:
     log_file = open(log_file_name, "w")
 except IOError:
@@ -318,6 +335,8 @@ for arg in sys.argv[2:]:
     if arg in device_types:
         continue
     if re.search("log=(\S+)", arg):
+        continue
+    if re.search(r"--conformance-results-dir=(\S+)", arg):
         continue
     num_of_patterns_to_match = num_of_patterns_to_match + 1
     found_it = False
