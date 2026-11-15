@@ -1,0 +1,31 @@
+; SPIR-V
+; Version: 1.0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "kernel_arg_val"
+               OpDecorate %dst Alignment 4
+               OpDecorate %s Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+   %struct_S = OpTypeStruct %uint %uint
+%pptr_struct_S = OpTypePointer Function %struct_S
+ %kernel_sig = OpTypeFunction %void %gptr_uint %struct_S
+  %pptr_uint = OpTypePointer Function %uint
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_uint
+          %s = OpFunctionParameter %struct_S
+      %entry = OpLabel
+         %ps = OpVariable %pptr_struct_S Function
+               OpStore %ps %s Aligned 4
+         %px = OpInBoundsPtrAccessChain %pptr_uint %ps %uint_0 %uint_0
+          %x = OpLoad %uint %px Aligned 4
+         %py = OpInBoundsPtrAccessChain %pptr_uint %ps %uint_0 %uint_1
+          %y = OpLoad %uint %py Aligned 4
+        %sum = OpIAdd %uint %x %y
+               OpStore %dst %sum Aligned 4
+               OpReturn
+               OpFunctionEnd

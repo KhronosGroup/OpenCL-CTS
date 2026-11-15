@@ -375,6 +375,18 @@ set(spirv_sources
     select_switch_flatten.spvasm64
     select_switch_none.spvasm32
     select_switch_none.spvasm64
+    struct_function_argument_ptr.spvasm32
+    struct_function_argument_ptr.spvasm64
+    struct_function_argument_val.spvasm32
+    struct_function_argument_val.spvasm64
+    struct_function_ret_ptr.spvasm32
+    struct_function_ret_ptr.spvasm64
+    struct_function_ret_val.spvasm32
+    struct_function_ret_val.spvasm64
+    struct_kernel_argument_ptr.spvasm32
+    struct_kernel_argument_ptr.spvasm64
+    struct_kernel_argument_val.spvasm32
+    struct_kernel_argument_val.spvasm64
     spv1.1/basic.spvasm32
     spv1.1/basic.spvasm64
     spv1.2/basic.spvasm32

@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical64 OpenCL
+               OpEntryPoint Kernel %kernel "func_ret_val"
+               OpDecorate %dst Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+   %struct_S = OpTypeStruct %uint %uint
+%pptr_struct_S = OpTypePointer Function %struct_S
+      %uint2 = OpTypeVector %uint 2
+   %func_sig = OpTypeFunction %struct_S %uint2
+  %pttr_uint = OpTypePointer Function %uint
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint %uint2
+       %func = OpFunction %struct_S None %func_sig
+      %arg_v = OpFunctionParameter %uint2
+ %func_entry = OpLabel
+    %ps_func = OpVariable %pptr_struct_S Function
+    %arg_v_x = OpCompositeExtract %uint %arg_v 0
+  %ps_func_x = OpInBoundsPtrAccessChain %pttr_uint %ps_func %uint_0 %uint_0
+               OpStore %ps_func_x %arg_v_x Aligned 4
+    %arg_v_y = OpCompositeExtract %uint %arg_v 1
+  %ps_func_y = OpInBoundsPtrAccessChain %pttr_uint %ps_func %uint_0 %uint_1
+               OpStore %ps_func_y %arg_v_y Aligned 4
+      %s_ret = OpLoad %struct_S %ps_func Aligned 4
+               OpReturnValue %s_ret
+               OpFunctionEnd
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_uint
+          %v = OpFunctionParameter %uint2
+%kernel_entry = OpLabel
+         %ps = OpVariable %pptr_struct_S Function
+          %s = OpFunctionCall %struct_S %func %v
+               OpStore %ps %s Aligned 4
+       %ps_x = OpInBoundsPtrAccessChain %pttr_uint %ps %uint_0 %uint_0
+        %s_x = OpLoad %uint %ps_x Aligned 4
+       %ps_y = OpInBoundsPtrAccessChain %pttr_uint %ps %uint_0 %uint_1
+        %s_y = OpLoad %uint %ps_y Aligned 4
+        %sum = OpIAdd %uint %s_x %s_y
+               OpStore %dst %sum Aligned 4
+               OpReturn
+               OpFunctionEnd

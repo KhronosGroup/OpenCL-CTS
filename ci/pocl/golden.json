@@ -400,7 +400,13 @@
             "op_spec_constant_false_simple": "pass",
             "op_spec_constant_compile_link": "pass",
             "op_spec_constant_build_twice": "pass",
-            "op_spec_constant_compile_twice": "pass"
+            "op_spec_constant_compile_twice": "pass",
+            "struct_handling_function_arg_ptr": "pass",
+            "struct_handling_function_arg_val": "pass",
+            "struct_handling_function_ret_ptr": "pass",
+            "struct_handling_function_ret_val": "pass",
+            "struct_handling_kernel_arg_ptr": "pass",
+            "struct_handling_kernel_arg_val": "pass"            
         }
     },
     "test_subgroups": {

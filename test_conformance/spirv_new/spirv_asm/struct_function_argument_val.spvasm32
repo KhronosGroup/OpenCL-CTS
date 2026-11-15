@@ -1,0 +1,46 @@
+; SPIR-V
+; Version: 1.0
+               OpCapability Addresses
+               OpCapability Kernel
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "func_arg_val"
+               OpDecorate %dst Alignment 4
+       %uint = OpTypeInt 32 0
+     %uint_0 = OpConstant %uint 0
+     %uint_1 = OpConstant %uint 1
+   %struct_S = OpTypeStruct %uint %uint
+%pptr_struct_S = OpTypePointer Function %struct_S
+   %func_sig = OpTypeFunction %uint %struct_S
+  %pptr_uint = OpTypePointer Function %uint
+       %void = OpTypeVoid
+%gptr_uint = OpTypePointer CrossWorkgroup %uint
+      %uint2 = OpTypeVector %uint 2
+ %kernel_sig = OpTypeFunction %void %gptr_uint %uint2
+       %func = OpFunction %uint None %func_sig
+      %arg_s = OpFunctionParameter %struct_S
+ %func_entry = OpLabel
+    %ps_func = OpVariable %pptr_struct_S Function
+               OpStore %ps_func %arg_s Aligned 4
+   %arg_ps_x = OpInBoundsPtrAccessChain %pptr_uint %ps_func %uint_0 %uint_0
+      %arg_x = OpLoad %uint %arg_ps_x Aligned 4
+   %arg_ps_y = OpInBoundsPtrAccessChain %pptr_uint %ps_func %uint_0 %uint_1
+      %arg_y = OpLoad %uint %arg_ps_y Aligned 4
+        %ret = OpIAdd %uint %arg_x %arg_y
+               OpReturnValue %ret
+               OpFunctionEnd
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_uint
+          %v = OpFunctionParameter %uint2
+%kernel_entry = OpLabel
+         %ps = OpVariable %pptr_struct_S Function
+        %v_x = OpCompositeExtract %uint %v 0
+       %ps_x = OpInBoundsPtrAccessChain %pptr_uint %ps %uint_0 %uint_0
+               OpStore %ps_x %v_x Aligned 4
+        %v_y = OpCompositeExtract %uint %v 1
+       %ps_y = OpInBoundsPtrAccessChain %pptr_uint %ps %uint_0 %uint_1
+               OpStore %ps_y %v_y Aligned 4
+          %s = OpLoad %struct_S %ps Aligned 4
+        %sum = OpFunctionCall %uint %func %s
+               OpStore %dst %sum Aligned 4
+               OpReturn
+               OpFunctionEnd

@@ -22,5 +22,15 @@
             "shuffle_built_in": "pass",
             "shuffle_built_in_dual_input": "pass"
         }
+    },
+    "test_spirv_new": {
+        "": {
+            "struct_handling_function_arg_ptr": "pass",
+            "struct_handling_function_arg_val": "pass",
+            "struct_handling_function_ret_ptr": "pass",
+            "struct_handling_function_ret_val": "pass",
+            "struct_handling_kernel_arg_ptr": "pass",
+            "struct_handling_kernel_arg_val": "pass"            
+        }
     }
 }
