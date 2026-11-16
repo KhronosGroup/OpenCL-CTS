@@ -1520,7 +1520,7 @@ REGISTER_TEST(buffer_fill_pattern_lifetime)
 
     clMemWrapper buffer;
     clEventWrapper user_event;
-    std::unique_ptr<cl_int[]> pattern(new cl_int[1]);
+    cl_int pattern = TEST_PRIME_INT;
     std::vector<cl_int> host_buffer(num_elements);
 
     buffer =
@@ -1530,14 +1530,12 @@ REGISTER_TEST(buffer_fill_pattern_lifetime)
     user_event = clCreateUserEvent(context, &err);
     test_error_fail(err, "clCreateUserEvent failed");
 
-    pattern[0] = TEST_PRIME_INT;
-
-    err = clEnqueueFillBuffer(queue, buffer, pattern.get(), sizeof(cl_int), 0,
+    err = clEnqueueFillBuffer(queue, buffer, &pattern, sizeof(cl_int), 0,
                               buffer_bytes, 1, &user_event, nullptr);
     test_error_fail(err, "clEnqueueFillBuffer failed");
 
     /* Modify pattern while command is blocked */
-    pattern[0] = static_cast<cl_int>(0xDEADBEEF);
+    pattern = static_cast<cl_int>(0xDEADBEEF);
 
     err = clSetUserEventStatus(user_event, CL_COMPLETE);
     test_error_fail(err, "clSetUserEventStatus failed");

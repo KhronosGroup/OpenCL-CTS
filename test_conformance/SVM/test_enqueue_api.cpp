@@ -366,7 +366,7 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     const size_t svm_size = num_elements * sizeof(cl_int);
 
     clSVMWrapper svm_ptr;
-    std::unique_ptr<cl_int[]> pattern(new cl_int[1]);
+    cl_int pattern = FILL_PATTERN;
     clEventWrapper user_event;
 
     err =
@@ -383,14 +383,12 @@ REGISTER_TEST(svm_memfill_pattern_lifetime)
     user_event = clCreateUserEvent(context, &err);
     test_error_fail(err, "clCreateUserEvent failed");
 
-    pattern[0] = FILL_PATTERN;
-
-    err = clEnqueueSVMMemFill(queue, svm_ptr(), pattern.get(), sizeof(cl_int),
+    err = clEnqueueSVMMemFill(queue, svm_ptr(), &pattern, sizeof(cl_int),
                               svm_size, 1, &user_event, nullptr);
     test_error_fail(err, "clEnqueueSVMMemFill failed");
 
     /* corrupt pattern while command is blocked */
-    pattern[0] = static_cast<cl_int>(0xDEADBEEF);
+    pattern = static_cast<cl_int>(0xDEADBEEF);
 
     err = clSetUserEventStatus(user_event, CL_COMPLETE);
     test_error_fail(err, "clSetUserEventStatus failed");
