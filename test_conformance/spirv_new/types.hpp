@@ -128,7 +128,7 @@ GENRAND_REAL_FUNC(cl_half, 8)
 
 template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
 {
-    float f = (float)(genrand_real1(seed) * 2048.0);
+    float f = (float)(1.0 + genrand_real1(seed));
     return cl_half_from_float(f, CL_HALF_RTE);
 }
 
