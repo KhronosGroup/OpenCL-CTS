@@ -17,6 +17,12 @@
             "svm_atomic_exchange": "pass"
         }
     },
+    "test_commonfns": {
+        "": {
+            "smoothstep": "pass",
+            "smoothstepf": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
