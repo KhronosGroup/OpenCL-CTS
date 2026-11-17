@@ -22,5 +22,11 @@
             "shuffle_built_in": "pass",
             "shuffle_built_in_dual_input": "pass"
         }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
+        }
     }
 }
