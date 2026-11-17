@@ -64,3 +64,5 @@ runs:
         python3 ./ci/compare_results.py \
           --golden "$GOLDEN_FILE" \
           --results-dir test_results/
+        python3 ./ci/update_golden.py -o "$GOLDEN_FILE"
+        git diff --exit-code "$GOLDEN_FILE"
