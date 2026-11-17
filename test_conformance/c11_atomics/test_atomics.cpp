@@ -522,11 +522,9 @@ public:
     CBasicTestExchange(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
-    {
-        StartValue(1234);
-    }
-    virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue)
+    {}
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
     {
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
@@ -545,7 +543,7 @@ public:
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
@@ -560,9 +558,9 @@ public:
             + ");\n";
     }
 
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
     {
         oldValues[tid] = host_atomic_exchange(&destMemory[0], (HostDataType)tid,
                                               MemoryOrder());
@@ -570,9 +568,8 @@ public:
             oldValues[tid] = host_atomic_exchange(
                 &destMemory[0], oldValues[tid], MemoryOrder());
     }
-    virtual bool VerifyRefs(bool &correct, cl_uint threadCount,
-                            HostDataType *refValues,
-                            HostAtomicType *finalValues)
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
     {
         OldValueCheck(
             Iterations() % 2
@@ -632,6 +629,18 @@ public:
             tidFound[value] = true;
         }
         return true;
+    }
+
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        // The start value must be outside of tid range [0, threadCount],
+        // otherwise VerifyRefs validation could fail. threadCount is final only
+        // here, before the atomic is initialized.
+        StartValue(static_cast<HostDataType>(threadCount + 1));
+        return CBasicTestMemOrderScope<
+            HostAtomicType, HostDataType>::GenerateRefs(threadCount,
+                                                        startRefValues, d);
     }
 };
 
@@ -750,11 +759,10 @@ public:
         : CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>(dataType,
                                                                  useSVM)
     {
-        StartValue(123456);
         OldValueCheck(false);
     }
-    virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue)
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
     {
         if (MemoryOrder2() == MEMORY_ORDER_RELEASE
             || MemoryOrder2() == MEMORY_ORDER_ACQ_REL)
@@ -777,7 +785,7 @@ public:
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScope();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
@@ -820,9 +828,9 @@ public:
               "    }\n"
               "  }\n";
     }
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
     {
         HostDataType expected = (HostDataType)StartValue(), previous;
         oldValues[tid] = (HostDataType)tid;
@@ -843,9 +851,8 @@ public:
             }
         }
     }
-    virtual bool VerifyRefs(bool &correct, cl_uint threadCount,
-                            HostDataType *refValues,
-                            HostAtomicType *finalValues)
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
     {
         correct = true;
         /* We are expecting values from 0 to size-1 and initial value from
@@ -900,6 +907,18 @@ public:
             tidFound[value] = true;
         }
         return true;
+    }
+
+    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
+                      MTdata d) override
+    {
+        // The start value must be outside of tid range [0, threadCount] and
+        // must not match the error markers threadCount and threadCount + 1
+        // (mark unexpected success), see ProgramCore method above.
+        StartValue(static_cast<HostDataType>(threadCount + 2));
+        return CBasicTestMemOrder2Scope<
+            HostAtomicType, HostDataType>::GenerateRefs(threadCount,
+                                                        startRefValues, d);
     }
 };
 
