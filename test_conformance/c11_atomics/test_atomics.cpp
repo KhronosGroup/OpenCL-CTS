@@ -519,6 +519,8 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::IterationsStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DeviceThreads;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MaxHostThreads;
     CBasicTestExchange(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
@@ -526,6 +528,10 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
+        cl_uint threadCount = DeviceThreads() + MaxHostThreads();
+        // The start value must be outside of tid range [0, threadCount],
+        // otherwise VerifyRefs validation could fail.
+        StartValue(static_cast<HostDataType>(threadCount + 1));
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
@@ -629,18 +635,6 @@ public:
             tidFound[value] = true;
         }
         return true;
-    }
-
-    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
-                      MTdata d) override
-    {
-        // The start value must be outside of tid range [0, threadCount],
-        // otherwise VerifyRefs validation could fail. threadCount is final only
-        // here, before the atomic is initialized.
-        StartValue(static_cast<HostDataType>(threadCount + 1));
-        return CBasicTestMemOrderScope<
-            HostAtomicType, HostDataType>::GenerateRefs(threadCount,
-                                                        startRefValues, d);
     }
 };
 
@@ -755,6 +749,8 @@ public:
     using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::IterationsStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DeviceThreads;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MaxHostThreads;
     CBasicTestCompareStrong(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>(dataType,
                                                                  useSVM)
@@ -764,6 +760,12 @@ public:
     int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
                           cl_command_queue queue) override
     {
+        cl_uint threadCount = DeviceThreads() + MaxHostThreads();
+        // The start value must be outside of tid range [0, threadCount] and
+        // must not match the error markers threadCount and threadCount + 1
+        // (mark unexpected success), see ProgramCore method below.
+        StartValue(static_cast<HostDataType>(threadCount + 2));
+
         if (MemoryOrder2() == MEMORY_ORDER_RELEASE
             || MemoryOrder2() == MEMORY_ORDER_ACQ_REL)
             return 0; // not allowed as 'failure' argument
@@ -907,18 +909,6 @@ public:
             tidFound[value] = true;
         }
         return true;
-    }
-
-    bool GenerateRefs(cl_uint threadCount, HostDataType *startRefValues,
-                      MTdata d) override
-    {
-        // The start value must be outside of tid range [0, threadCount] and
-        // must not match the error markers threadCount and threadCount + 1
-        // (mark unexpected success), see ProgramCore method above.
-        StartValue(static_cast<HostDataType>(threadCount + 2));
-        return CBasicTestMemOrder2Scope<
-            HostAtomicType, HostDataType>::GenerateRefs(threadCount,
-                                                        startRefValues, d);
     }
 };
 
