@@ -4,6 +4,12 @@
             "enqueue_task": "pass"
         }
     },
+    "test_commonfns": {
+        "": {
+            "smoothstep": "pass",
+            "smoothstepf": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",

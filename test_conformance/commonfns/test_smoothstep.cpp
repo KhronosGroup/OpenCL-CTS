@@ -259,8 +259,12 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
         for (i = 0; i < num_elements; i++)
         {
             input_ptr[0][i] = conv_to_half(get_random_float(-65503, 65503, d));
-            input_ptr[1][i] = conv_to_half(
-                get_random_float(conv_to_flt(input_ptr[0][i]), 65503, d));
+            const float edge0 = conv_to_flt(input_ptr[0][i]);
+            // Make sure edge1 - edge0 fits in half (leaving room for rounding).
+            const float edge1_max =
+                std::fmin(CL_HALF_MAX, edge0 + (CL_HALF_MAX - 32.0f));
+            input_ptr[1][i] =
+                conv_to_half(get_random_float(edge0, edge1_max, d));
             input_ptr[2][i] = conv_to_half(get_random_float(-65503, 65503, d));
         }
     }
