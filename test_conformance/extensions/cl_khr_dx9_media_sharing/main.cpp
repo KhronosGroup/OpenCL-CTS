@@ -15,8 +15,11 @@
 //
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
+#ifdef _WIN32
 #include "utils.h"
 #include "procs.h"
 
@@ -28,6 +31,7 @@ clEnqueueAcquireDX9MediaSurfacesKHR_fn clEnqueueAcquireDX9MediaSurfacesKHR =
     NULL;
 clEnqueueReleaseDX9MediaSurfacesKHR_fn clEnqueueReleaseDX9MediaSurfacesKHR =
     NULL;
+#endif
 
 cl_platform_id gPlatformIDdetected;
 cl_device_id gDeviceIDdetected;
@@ -35,6 +39,7 @@ cl_device_type gDeviceTypeSelected = CL_DEVICE_TYPE_DEFAULT;
 
 bool MediaSurfaceSharingExtensionInit()
 {
+#ifdef _WIN32
     clGetDeviceIDsFromDX9MediaAdapterKHR =
         (clGetDeviceIDsFromDX9MediaAdapterKHR_fn)
             clGetExtensionFunctionAddressForPlatform(
@@ -79,6 +84,9 @@ bool MediaSurfaceSharingExtensionInit()
     }
 
     return true;
+#else
+    return false;
+#endif
 }
 
 bool DetectPlatformAndDevice()
@@ -205,7 +213,9 @@ static test_status parseArgs(int &argc, const char *argv[],
         }
         else if (strcmp(argv[i], "sw") == 0 || strcmp(argv[i], "software") == 0)
         {
+#ifdef _WIN32
             CDeviceWrapper::AccelerationType(CDeviceWrapper::ACCELERATION_SW);
+#endif
             removed_args.push_back(argv[i]);
         }
         else
