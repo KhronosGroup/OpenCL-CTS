@@ -14,14 +14,15 @@ runs:
       id: prep
       shell: bash
       env:
+        DRIVER: ${{ inputs.driver }}
         TRIGGER_TEXT: ${{ inputs.trigger-text }}
       run: |
-        COMMANDS=$(printf '%s\n' "$TRIGGER_TEXT" | grep -oP "^\[run-tests?(?:-${{ inputs.driver }})?:\s*\K[^\]]+" | sort -u || true)
+        COMMANDS=$(printf '%s\n' "$TRIGGER_TEXT" | grep -oP "^\[run-tests?(?:-${DRIVER})?:\s*\K[^\]]+" | sort -u || true)
         if [ -z "$COMMANDS" ]; then
-          echo "No test triggers found for driver '${{ inputs.driver }}'."
+          echo "No test triggers found for driver '$DRIVER'."
           echo "has_tests=false" >> $GITHUB_OUTPUT
         else
-          echo "Found test triggers for driver '${{ inputs.driver }}':"
+          echo "Found test triggers for driver '$DRIVER':"
           echo "$COMMANDS"
           echo "$COMMANDS" > test_commands.txt
           echo "has_tests=true" >> $GITHUB_OUTPUT
@@ -53,9 +54,11 @@ runs:
     - name: Check results
       if: steps.prep.outputs.has_tests == 'true'
       shell: bash
+      env:
+        DRIVER: ${{ inputs.driver }}
       run: |
         ls test_results
-        GOLDEN_FILE="./ci/${{ inputs.driver }}/golden.json"
+        GOLDEN_FILE="./ci/${DRIVER}/golden.json"
         if [ ! -f "$GOLDEN_FILE" ]; then
           echo "Golden reference '$GOLDEN_FILE' does not exist."
           mkdir -p "$(dirname "$GOLDEN_FILE")"
