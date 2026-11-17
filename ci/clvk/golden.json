@@ -4,6 +4,14 @@
             "enqueue_task": "pass"
         }
     },
+    "test_c11_atomics": {
+        "": {
+            "atomic_exchange": "pass",
+            "svm_atomic_exchange": "pass",
+            "atomic_compare_exchange_strong": "pass",
+            "svm_atomic_compare_exchange_strong": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
