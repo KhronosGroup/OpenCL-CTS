@@ -33,6 +33,62 @@
 // The number of errors to print out for each test
 #define MAX_ERRORS_TO_PRINT 10
 
+enum TestOp
+{
+    kOpAdd = 0,
+    kOpSub,
+    kOpMul,
+    kOpDiv,
+    kOpRem,
+    kOpBitAnd,
+    kOpBitOr,
+    kOpBitXor,
+    kOpShrVec,
+    kOpShlVec,
+    kOpShrScalar,
+    kOpShlScalar,
+    kOpBitNot,
+    kOpTernary,
+    kOpLogAnd,
+    kOpLogOr,
+    kOpLt,
+    kOpGt,
+    kOpLe,
+    kOpGe,
+    kOpEq,
+    kOpNe,
+    kOpLogNot,
+    NUM_TESTS
+};
+
+enum KernelTemplateKind
+{
+    kKernelBinary,
+    kKernelUnary,
+    kKernelScalarShift,
+    kKernelQuestionColon,
+};
+
+enum TestGroup
+{
+    kGroupMath,
+    kGroupLogic,
+    kGroupShift,
+    kGroupCompare,
+};
+
+struct TestDef
+{
+    TestOp id;
+    const char *op;
+    const char *name;
+    KernelTemplateKind template_kind;
+    bool signed_result;
+    TestGroup group;
+};
+
+extern const TestDef test_defs[NUM_TESTS];
+
 // The "+", "-" and "*" integer tests fill both operands with full range random
 // values. OpenCL C section 6.3 applies the C99 usual arithmetic conversions, so
 // an operation whose signed result is not representable is undefined; the
