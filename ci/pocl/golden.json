@@ -161,6 +161,14 @@
             "erfc": "pass"
         }
     },
+    "test_c11_atomics": {
+        "": {
+            "atomic_exchange": "pass",
+            "svm_atomic_exchange": "pass",
+            "atomic_compare_exchange_strong": "pass",
+            "svm_atomic_compare_exchange_strong": "pass"
+        }
+    },
     "test_cl_copy_images": {
         "--num-worker-threads 2 small_images": {
             "1D": "pass",
