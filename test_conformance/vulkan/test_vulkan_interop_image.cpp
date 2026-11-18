@@ -31,8 +31,8 @@ namespace {
 #define MAX_2D_IMAGE_WIDTH 1024
 #define MAX_2D_IMAGE_HEIGHT 1024
 #define MAX_2D_IMAGE_ELEMENT_SIZE 16
-#define NUM_THREADS_PER_GROUP_X 32
-#define NUM_THREADS_PER_GROUP_Y 32
+#define NUM_THREADS_PER_GROUP_X 16
+#define NUM_THREADS_PER_GROUP_Y 8
 
 #define ASSERT(x)                                                              \
     if (!(x))                                                                  \
