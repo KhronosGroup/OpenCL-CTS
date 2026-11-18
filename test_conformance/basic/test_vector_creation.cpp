@@ -14,8 +14,10 @@
 // limitations under the License.
 //
 #include "harness/conversions.h"
+#include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 #include "harness/errorHelpers.h"
+#include <string>
 #include <vector>
 
 #include <CL/cl_half.h>
@@ -24,8 +26,10 @@ extern cl_half_rounding_mode halfRoundingMode;
 
 #define DEBUG 0
 #define DEPTH 16
-// Limit the maximum code size for any given kernel.
-#define MAX_CODE_SIZE (1024 * 32)
+#define NUM_VECTOR_SIZES 6
+// Limit the maximum number of vector creation permutations per kernel to avoid
+// large basic blocks causing long compilation times.
+#define MAX_PERMUTATIONS_PER_KERNEL 64
 
 static const int sizes[] = { 1, 2, 3, 4, 8, 16, -1, -1, -1, -1 };
 static const int initial_no_sizes[] = { 0, 0, 0, 0, 0, 0, 2 };
@@ -35,7 +39,8 @@ static char extension[128] = { 0 };
 
 // Creates a kernel by enumerating all possible ways of building a vector of
 // `output_size` using combinations of `vload` operations.
-// If the amount of code generated exceeds `MAX_CODE_SIZE`, this function
+// If the number of vector creation permutations reaches
+// `MAX_PERMUTATIONS_PER_KERNEL` and more permutations remain, this function
 // returns `false` and can be called again to continue from where it left off.
 // The `number_of_results` parameter is updated to indicate how many vector
 // creation lines were added in this call.
@@ -43,7 +48,7 @@ static char extension[128] = { 0 };
 // to start the enumeration from the beginning. Subsequent calls should set it
 // to `false` to continue the permutation search using an internal static
 // variable.
-bool create_kernel(ExplicitType type, int output_size, char *program,
+bool create_kernel(ExplicitType type, int output_size, std::string &program,
                    int *number_of_results, bool reset_skip_to_permutation)
 {
 
@@ -56,37 +61,35 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
         case 3: number_of_sizes = 3; break;
         case 4: number_of_sizes = 4; break;
         case 8: number_of_sizes = 5; break;
-        case 16: number_of_sizes = 6; break;
-        default: log_error("Invalid size: %d\n", output_size); return -1;
+        case 16: number_of_sizes = NUM_VECTOR_SIZES; break;
+        default: log_error("Invalid size: %d\n", output_size); return false;
     }
 
     int permutation_index = 0;
     int current_result = 0;
     int total_vloads = 0;
-    int total_program_length = 0;
-    int aborted_due_to_size = 0;
+    bool split_kernel = false;
 
     static int skip_to_permutation = 0;
     if (reset_skip_to_permutation) skip_to_permutation = 0;
 
-    // The line of code for the vector creation
-    char line[1024];
     // Keep track of what size vector we are using in each position so we can
     // iterate through all fo them
     int pos[DEPTH];
     int max_size = output_size;
     if (DEBUG > 1) log_info("max_size: %d\n", max_size);
 
-    program[0] = '\0';
-    sprintf(program,
-            "%s\n__kernel void test_vector_creation(__global %s *src, __global "
-            "%s%s *result) {\n",
-            extension, get_explicit_type_name(type),
-            get_explicit_type_name(type),
-            (number_of_sizes == 3) ? "" : size_names[number_of_sizes - 1]);
-    total_program_length += (int)strlen(program);
+    const char *type_name = get_explicit_type_name(type);
+    program = str_sprintf(
+        "%s\n__kernel void test_vector_creation(__global %s *src, __global "
+        "%s%s *result) {\n",
+        extension, type_name, type_name,
+        (number_of_sizes == 3) ? "" : size_names[number_of_sizes - 1]);
 
-    char storePrefix[128], storeSuffix[128];
+    // Collect store lines and track which loads are referenced so we can
+    // emit only the needed pre-loads at the start of the kernel.
+    std::string stores;
+    bool used_loads[NUM_VECTOR_SIZES][DEPTH] = {};
 
     // Start out trying sizes 1,1,1... by initializing pos array to zeros for
     // all vector sizes except 16. For 16-sizes initial_no_sizes array holds
@@ -158,22 +161,16 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
 
 
         // Generate the actual load line if we are building this part
-        line[0] = '\0';
         if (permutation_index >= skip_to_permutation)
         {
+            std::string store_line;
             if (number_of_sizes == 3)
-            {
-                sprintf(storePrefix, "vstore3( ");
-                sprintf(storeSuffix, ", %d, result )", current_result);
-            }
+                store_line =
+                    str_sprintf("\tvstore3( (%s%d)(", type_name, output_size);
             else
-            {
-                sprintf(storePrefix, "result[%d] = ", current_result);
-                storeSuffix[0] = 0;
-            }
-
-            sprintf(line, "\t%s(%s%d)(", storePrefix,
-                    get_explicit_type_name(type), output_size);
+                store_line =
+                    str_sprintf("\tresult[%d] = (%s%d)(", current_result,
+                                type_name, output_size);
 
             bool covers_middle = false;
             int offset = 0;
@@ -181,30 +178,39 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
             {
                 int start = offset;
                 if (pos[i] == 0)
-                    sprintf(line + strlen(line), "src[%d]", offset);
+                    store_line += str_sprintf("v1_%d", offset);
                 else
-                    sprintf(line + strlen(line), "vload%s(0,src+%d)",
-                            size_names[pos[i]], offset);
+                    store_line +=
+                        str_sprintf("v%s_%d", size_names[pos[i]], offset);
                 offset += sizes[pos[i]];
                 if (start <= ((output_size / 2) - 1)
                     && offset > (output_size / 2))
                     covers_middle = true;
-                if (i < (vloads - 1)) sprintf(line + strlen(line), ",");
+                if (i < (vloads - 1)) store_line += ",";
             }
-            sprintf(line + strlen(line), ")%s;\n", storeSuffix);
+            if (number_of_sizes == 3)
+                store_line += str_sprintf("), %d, result );\n", current_result);
+            else
+                store_line += ");\n";
 
             if (covers_middle || vloads < 4 || vloads == output_size)
             {
-                strcat(program, line);
+                if (current_result >= MAX_PERMUTATIONS_PER_KERNEL)
+                {
+                    split_kernel = true;
+                    break;
+                }
+
+                int load_offset = 0;
+                for (int i = 0; i < vloads; i++)
+                {
+                    used_loads[pos[i]][load_offset] = true;
+                    load_offset += sizes[pos[i]];
+                }
+                stores += store_line;
                 total_vloads += vloads;
                 current_result++;
-                total_program_length += (int)strlen(line);
-                if (total_program_length > MAX_CODE_SIZE)
-                {
-                    aborted_due_to_size = 1;
-                    done = 1;
-                }
-                if (DEBUG) log_info("line is: %s", line);
+                if (DEBUG) log_info("line is: %s", store_line.c_str());
             }
         }
         permutation_index++;
@@ -241,17 +247,33 @@ bool create_kernel(ExplicitType type, int output_size, char *program,
 
         // Continue until we are done.
     }
-    strcat(program, "}\n\n"); // log_info("%s\n", program);
-    total_program_length += 3;
+
+    for (int s = 0; s < number_of_sizes; s++)
+    {
+        for (int off = 0; off <= max_size - sizes[s]; off++)
+        {
+            if (!used_loads[s][off]) continue;
+            if (s == 0)
+                program +=
+                    str_sprintf("\t%s v1_%d = src[%d];\n", type_name, off, off);
+            else
+                program += str_sprintf("\t%s%s v%s_%d = vload%s(0,src+%d);\n",
+                                       type_name, size_names[s], size_names[s],
+                                       off, size_names[s], off);
+        }
+    }
+    program += stores;
+    program += "}\n\n";
+
     if (DEBUG)
         log_info(
             "\t\t(Program for vector type %s%s contains %d vector creations, "
             "of total program length %gkB, with a total of %d vloads.)\n",
-            get_explicit_type_name(type), size_names[number_of_sizes - 1],
-            current_result, total_program_length / 1024.0, total_vloads);
+            type_name, size_names[number_of_sizes - 1], current_result,
+            program.size() / 1024.0, total_vloads);
     *number_of_results = current_result;
     skip_to_permutation = permutation_index;
-    return !aborted_due_to_size;
+    return !split_kernel;
 }
 
 
@@ -267,7 +289,7 @@ REGISTER_TEST(vector_creation)
     int total_errors = 0;
 
     std::vector<char> input_data_converted(sizeof(cl_double) * 16);
-    std::vector<char> program_source(sizeof(char) * 1024 * 1024 * 4);
+    std::string program_source;
     std::vector<char> output_data;
 
     // Iterate over all the types
@@ -364,23 +386,22 @@ REGISTER_TEST(vector_creation)
                 clProgramWrapper program;
                 int number_of_results = 0;
 
-                vector_size_completed =
-                    create_kernel(vecType[type_index], vecSizes[size_index],
-                                  program_source.data(), &number_of_results,
-                                  total_number_of_results == 0);
+                vector_size_completed = create_kernel(
+                    vecType[type_index], vecSizes[size_index], program_source,
+                    &number_of_results, total_number_of_results == 0);
                 if (total_number_of_results == 0 && !vector_size_completed)
-                    log_info("Code size greater than %gkB; splitting test "
+                    log_info("More than %d permutations; splitting test "
                              "into multiple kernels.\n",
-                             MAX_CODE_SIZE / 1024.0);
+                             MAX_PERMUTATIONS_PER_KERNEL);
                 log_info("\tExecuting vector permutations %d to %d...\n",
                          total_number_of_results,
                          total_number_of_results + number_of_results - 1);
                 total_number_of_results += number_of_results;
 
-                char *src = program_source.data();
-                error = create_single_kernel_helper(context, &program, &kernel,
-                                                    1, (const char **)&src,
-                                                    "test_vector_creation");
+                const char *src = program_source.c_str();
+                error =
+                    create_single_kernel_helper(context, &program, &kernel, 1,
+                                                &src, "test_vector_creation");
                 if (error)
                 {
                     log_error("create_single_kernel_helper failed.\n");
@@ -469,14 +490,15 @@ REGISTER_TEST(vector_creation)
                         char search[32] = { 0 };
                         char found_line[1024] = { 0 };
                         sprintf(search, "result[%d] = (", i);
-                        char *start_loc = strstr(program_source.data(), search);
+                        const char *start_loc =
+                            strstr(program_source.c_str(), search);
                         if (start_loc == NULL)
                             log_error("Failed to find program source for "
                                       "failure for %s in \n%s",
-                                      search, program_source.data());
+                                      search, program_source.c_str());
                         else
                         {
-                            char *end_loc = strstr(start_loc, "\n");
+                            const char *end_loc = strstr(start_loc, "\n");
                             memcpy(&found_line, start_loc,
                                    (end_loc - start_loc));
                             found_line[end_loc - start_loc] = '\0';
