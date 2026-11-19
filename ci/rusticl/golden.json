@@ -5,6 +5,11 @@
             "negative_enqueue_invalid_work_dim": "pass"
         }
     },
+    "test_basic": {
+        "": {
+            "vector_creation": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
