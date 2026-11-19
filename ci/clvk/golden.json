@@ -4,6 +4,11 @@
             "enqueue_task": "pass"
         }
     },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
