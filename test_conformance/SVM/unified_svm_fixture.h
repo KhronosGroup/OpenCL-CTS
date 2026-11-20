@@ -19,6 +19,10 @@
 #include <algorithm>
 #include <memory>
 
+#ifndef CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR
+#define CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR 0x1078
+#endif
+
 constexpr cl_bitfield PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR =
     ((cl_bitfield)1 << 63);
 
@@ -408,6 +412,29 @@ struct UnifiedSVMBase
                           "Platform SVM capability size does not match device "
                           "SVM capability size!");
 
+        // Query the concurrent access atom sizes (in bytes), one per SVM type
+        // index. A value of zero means the type does not support concurrent
+        // access.
+        err = clGetDeviceInfo(device,
+                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR, 0,
+                              nullptr, &sz);
+        test_error(err,
+                   "clGetDeviceInfo failed for "
+                   "CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR size");
+
+        deviceConcurrentAccessAtomSizes.resize(sz / sizeof(size_t));
+        err = clGetDeviceInfo(device,
+                              CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR, sz,
+                              deviceConcurrentAccessAtomSizes.data(), nullptr);
+        test_error(err,
+                   "clGetDeviceInfo failed for "
+                   "CL_DEVICE_SVM_CONCURRENT_ACCESS_ATOM_SIZE_KHR data");
+
+        test_assert_error(
+            deviceConcurrentAccessAtomSizes.size() == deviceUSVMCaps.size(),
+            "Concurrent access atom size count does not match device SVM "
+            "capability count!");
+
         const size_t check = platformUSVMCaps.size();
 
         // Look through the platform and device SVM capabilities.
@@ -437,6 +464,10 @@ struct UnifiedSVMBase
                 platformUSVMCaps.push_back(
                     platformUSVMCaps[ti]
                     | PSEUDO_CAPABILITY_USE_SYSTEM_ALLOCATOR);
+                // The system allocator pseudo type shares the granularity of
+                // the type it was derived from.
+                deviceConcurrentAccessAtomSizes.push_back(
+                    deviceConcurrentAccessAtomSizes[ti]);
             }
         }
 
@@ -512,6 +543,9 @@ struct UnifiedSVMBase
 
     std::vector<cl_svm_capabilities_khr> platformUSVMCaps;
     std::vector<cl_svm_capabilities_khr> deviceUSVMCaps;
+    // Concurrent access atom size in bytes per SVM type index, including the
+    // system allocator pseudo types.
+    std::vector<size_t> deviceConcurrentAccessAtomSizes;
     size_t deviceMaxAlignment = 0;
 
     clSVMAllocWithPropertiesKHR_fn clSVMAllocWithPropertiesKHR = nullptr;

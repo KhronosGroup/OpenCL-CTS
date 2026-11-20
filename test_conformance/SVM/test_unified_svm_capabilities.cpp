@@ -17,6 +17,7 @@
 #include "unified_svm_fixture.h"
 #include <cinttypes>
 #include <memory>
+#include <numeric>
 
 struct UnifiedSVMCapabilities : UnifiedSVMBase
 {
@@ -451,6 +452,96 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int test_CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR(cl_uint typeIndex)
+    {
+        cl_int err;
+        const auto caps = deviceUSVMCaps[typeIndex];
+        auto mem = get_usvm_wrapper<cl_int>(typeIndex);
+        err = mem->allocate(num_elements);
+        test_error(err, "could not allocate usvm memory");
+
+        if (!kernel_ConcurrentAccessWrite)
+        {
+            err = createConcurrentAccessKernel();
+            test_error(err, "could not create ConcurrentAccess kernel");
+        }
+
+        auto ptr = mem->get_ptr();
+        int granularity_integer =
+            static_cast<int>(deviceConcurrentAccessAtomSizes[typeIndex]);
+
+        test_assert_error(granularity_integer != 0,
+                          "ConcurrentAccess atom size should not be 0 for an "
+                          "SVM type with ConcurrentAccess capability");
+
+        err |= clSetKernelArgSVMPointer(kernel_ConcurrentAccessWrite, 0, ptr);
+        err |=
+            clSetKernelArg(kernel_ConcurrentAccessWrite, 1,
+                           sizeof(granularity_integer), &granularity_integer);
+        test_error(err, "could not set kernel arguments");
+
+        size_t global_work_size = num_elements;
+        err = clEnqueueNDRangeKernel(queue, kernel_ConcurrentAccessWrite, 1,
+                                     nullptr, &global_work_size, nullptr, 0,
+                                     nullptr, nullptr);
+        test_error(err, "clEnqueueNDRangeKernel failed");
+
+        err = clFlush(queue);
+        test_error(err, "clFlush failed");
+
+        if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
+        {
+            for (int i = granularity_integer; i < num_elements;
+                 i += 2 * granularity_integer)
+            {
+                int end = i + granularity_integer;
+
+                if (end > num_elements)
+                {
+                    end = num_elements;
+                }
+
+                for (int j = i; j < end; ++j)
+                {
+                    // Repeatedly read-modify-write this element to increase
+                    // the chance that host and device accesses to adjacent
+                    // locations overlap in time. The pointer is volatile so
+                    // the compiler cannot collapse these accesses into a
+                    // single store: the final write below would otherwise
+                    // make the loop dead code. Mirrors the device kernel.
+                    volatile int* elem = ptr + j;
+
+                    for (int busy = 0; busy < 1024; ++busy)
+                    {
+                        int value = *elem;
+
+                        if ((value & 1) == 0)
+                            *elem = value | 1;
+                        else
+                            *elem = value & ~1;
+                    }
+
+                    *elem = j + 1;
+                }
+            }
+        }
+        else
+        {
+            log_info("Cannot test for concurrent access on this SVM type since "
+                     "no host write access, skipping subtest.\n");
+            return CL_SUCCESS;
+        }
+
+        err = clFinish(queue);
+        test_error(err, "clFinish failed");
+
+        auto result_sum = std::accumulate(ptr, ptr + num_elements, 0);
+        test_assert_error((num_elements * (num_elements + 1)) / 2 == result_sum,
+                          "result value does not match");
+
+        return CL_SUCCESS;
+    }
+
     cl_int test_CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR(cl_uint typeIndex)
     {
         cl_int err;
@@ -608,7 +699,14 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                 test_error(err,
                            "CL_SVM_CAPABILITY_DEVICE_ATOMIC_ACCESS failed");
             }
-            // CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR
+            if (caps & CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR)
+            {
+                log_info(
+                    "     testing CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR\n");
+                err = test_CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR(ti);
+                test_error(err,
+                           "CL_SVM_CAPABILITY_CONCURRENT_ACCESS_KHR failed");
+            }
             // CL_SVM_CAPABILITY_CONCURRENT_ATOMIC_ACCESS_KHR
             if (caps & CL_SVM_CAPABILITY_INDIRECT_ACCESS_KHR)
             {
@@ -681,6 +779,43 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         return CL_SUCCESS;
     }
 
+    cl_int createConcurrentAccessKernel()
+    {
+        cl_int err;
+
+        const char* programString = R"(
+            kernel void test_ConcurrentAccessWrite(global int* dst, int granularity)
+            {
+                int work_item_index = get_global_id(0);
+
+                if ((work_item_index / granularity) % 2 == 0)
+                {
+                    volatile global int* ptr = dst + work_item_index;
+
+                    for (int i = 0; i < 1024; ++i)
+                    {
+                        int value = *ptr;  // volatile read
+
+                        if ((value & 1) == 0)
+                            *ptr = value | 1;   // volatile write: set bit 0
+                        else
+                            *ptr = value & ~1;  // volatile write: clear bit 0
+                    }
+
+                    *ptr = work_item_index + 1; // final volatile write
+                }
+            }
+        )";
+
+        clProgramWrapper program;
+        err = create_single_kernel_helper(
+            context, &program, &kernel_ConcurrentAccessWrite, 1, &programString,
+            "test_ConcurrentAccessWrite");
+        test_error(err, "could not create ConcurrentAccessWrite kernel");
+
+        return CL_SUCCESS;
+    }
+
     cl_int createIndirectAccessKernel()
     {
         cl_int err;
@@ -717,6 +852,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
     clKernelWrapper kernel_AtomicIncrement;
     clKernelWrapper kernel_IndirectAccessRead;
     clKernelWrapper kernel_IndirectAccessWrite;
+    clKernelWrapper kernel_ConcurrentAccessWrite;
 };
 
 REGISTER_TEST(unified_svm_capabilities)
