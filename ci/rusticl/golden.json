@@ -2,6 +2,8 @@
     "test_api": {
         "": {
             "enqueue_task": "pass",
+            "negative_create_image_kernel_read_and_write": "pass",
+            "negative_create_buffer_kernel_read_and_write": "pass",
             "negative_enqueue_invalid_work_dim": "pass"
         }
     },
