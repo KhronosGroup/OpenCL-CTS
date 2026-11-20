@@ -491,8 +491,6 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
         if (caps & CL_SVM_CAPABILITY_HOST_WRITE_KHR)
         {
-            volatile int* volatile_ptr = ptr;
-
             for (int i = granularity_integer; i < num_elements;
                  i += 2 * granularity_integer)
             {
@@ -505,17 +503,25 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
 
                 for (int j = i; j < end; ++j)
                 {
-                    for (unsigned int busy = 0; busy < 1024u; ++busy)
+                    // Repeatedly read-modify-write this element to increase
+                    // the chance that host and device accesses to adjacent
+                    // locations overlap in time. The pointer is volatile so
+                    // the compiler cannot collapse these accesses into a
+                    // single store: the final write below would otherwise
+                    // make the loop dead code. Mirrors the device kernel.
+                    volatile int* elem = ptr + j;
+
+                    for (int busy = 0; busy < 1024; ++busy)
                     {
-                        int value = volatile_ptr[j];
+                        int value = *elem;
 
                         if ((value & 1) == 0)
-                            volatile_ptr[j] = value | 1;
+                            *elem = value | 1;
                         else
-                            volatile_ptr[j] = value & ~1;
+                            *elem = value & ~1;
                     }
 
-                    volatile_ptr[j] = j + 1;
+                    *elem = j + 1;
                 }
             }
         }
@@ -780,13 +786,13 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
         const char* programString = R"(
             kernel void test_ConcurrentAccessWrite(global int* dst, int granularity)
             {
-                uint work_item_index = get_global_id(0);
+                int work_item_index = get_global_id(0);
 
-                if ((work_item_index / (uint)granularity) % 2u == 0u)
+                if ((work_item_index / granularity) % 2 == 0)
                 {
                     volatile global int* ptr = dst + work_item_index;
 
-                    for (uint i = 0; i < 1024u; ++i)
+                    for (int i = 0; i < 1024; ++i)
                     {
                         int value = *ptr;  // volatile read
 
@@ -796,7 +802,7 @@ struct UnifiedSVMCapabilities : UnifiedSVMBase
                             *ptr = value & ~1;  // volatile write: clear bit 0
                     }
 
-                    *ptr = (int)work_item_index + 1; // final volatile write
+                    *ptr = work_item_index + 1; // final volatile write
                 }
             }
         )";
