@@ -11,6 +11,7 @@ set(${MODULE_NAME}_SOURCES
          negative_enqueue_map_image.cpp
          negative_enqueue_ndrange.cpp
          negative_device.cpp
+         negative_mem_object.cpp
          test_api_consistency.cpp
          test_bool.cpp
          test_retain.cpp

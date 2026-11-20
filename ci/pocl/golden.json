@@ -17,6 +17,8 @@
             "min_max_read_write_image_args": "pass",
             "min_max_samplers": "pass",
             "min_max_write_image_args": "pass",
+            "negative_create_image_kernel_read_and_write": "pass",
+            "negative_create_buffer_kernel_read_and_write": "pass",
             "negative_enqueue_invalid_work_dim": "pass",
             "negative_enqueue_non_uniform_work_group_size": "pass",
             "negative_enqueue_work_group_size_exceeded": "pass",
