@@ -32,7 +32,7 @@
 // that rounding mode.
 #if defined(__APPLE__) || defined(_MSC_VER) || defined(__linux__)              \
     || defined(__MINGW32__)
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(_M_ARM64)
 typedef int FPU_mode_type;
 #else
 typedef int64_t FPU_mode_type;
@@ -76,7 +76,7 @@ inline void ForceFTZ(FPU_mode_type *oldMode)
 #elif defined(_M_ARM64) // Visual Studio
     uint64_t fpcr;
     fpcr = _ReadStatusReg(ARM64_FPCR);
-    *oldMode = (FPU_mode_type)fpcr;
+    *oldMode = fpcr;
     _WriteStatusReg(ARM64_FPCR, fpcr | (1ULL << 24));
 #elif defined(__mips__)
     fpa_bissr(FPA_CSR_FS);
@@ -109,7 +109,7 @@ inline void DisableFTZ(FPU_mode_type *oldMode)
 #elif defined(_M_ARM64) // Visual Studio
     uint64_t fpcr;
     fpcr = _ReadStatusReg(ARM64_FPCR);
-    *oldMode = (FPU_mode_type)fpcr;
+    *oldMode = fpcr;
     _WriteStatusReg(ARM64_FPCR, fpcr & ~(1ULL << 24));
 #elif defined(__mips__)
     fpa_bicsr(FPA_CSR_FS);
@@ -132,7 +132,7 @@ inline void RestoreFPState(FPU_mode_type *mode)
 #elif defined(__aarch64__) // Clang
     __asm__ volatile("msr fpcr, %0" ::"r"(*mode));
 #elif defined(_M_ARM64) // Visual Studio
-    _WriteStatusReg(ARM64_FPCR, (uint64_t)*mode);
+    _WriteStatusReg(ARM64_FPCR, *mode);
 #elif defined(__mips__)
     // Mips runs by default with DAZ=1 FTZ=1
 #else
