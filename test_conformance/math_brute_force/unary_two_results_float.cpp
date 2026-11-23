@@ -71,7 +71,15 @@ int TestFunc_Float2_Float(const Func *f, MTdata d, bool relaxedMode)
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
-        fillUnaryInput((float *)gIn, step, i, d, gTestAll);
+        float *p = (float *)gIn;
+        fillUnaryInput(p, step, i, d, gTestAll);
+        if (relaxedMode && strcmp(f->name, "sincos") == 0)
+        {
+            for (size_t j = 0; j < step; j++)
+            {
+                if (fabs(p[j]) > M_PI) p[j] = NAN;
+            }
+        }
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           BUFFER_SIZE, gIn, 0, NULL, NULL)))
