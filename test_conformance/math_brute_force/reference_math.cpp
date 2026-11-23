@@ -3901,8 +3901,108 @@ long double reference_expm1l(long double x)
 {
 #if defined(_MSC_VER) && !defined(__INTEL_COMPILER)                            \
     && !defined(__INTEL_LLVM_COMPILER)
-    // unimplemented
-    return x;
+    if (reference_isnanl(x)) return x;
+    if (x < -746.0L) return -1.0L;
+    if (x > 709.78L) return (long double)INFINITY;
+
+    double xd = (double)x;
+
+    // --- Argument reduction: xd = n*ln2 + r, |r| <= ln2/2 ---
+    // ln2 split so that nd*ln2_hi is exact (ln2_hi has trailing zeros).
+    static const double ln2_hi = 0x1.62e42fefa3800p-1;
+    static const double ln2_lo = 0x1.ef35793c76730p-45;
+    static const double inv_ln2 = 0x1.71547652b82fep+0;
+
+    double nd = round(xd * inv_ln2);
+    int n = (int)nd;
+
+    // r_hi + r_lo = xd - n*ln2 in DD (Dekker)
+    double r_hi = xd - nd * ln2_hi; // exact: nd*ln2_hi is exact, subtraction
+                                    // exact by Sterbenz
+    double r_lo = -nd * ln2_lo;
+    // Normalise: absorb r_lo into r_hi
+    double r = r_hi + r_lo; // |r| <= ln2/2 + tiny; used in polynomial
+
+    // --- Double-double helpers (local lambdas not available in C++03, use
+    // macros) --- two_sum(a,b) -> (s,e): s+e = a+b exactly
+#define DD_TWO_SUM(a, b, s, e)                                                 \
+    do                                                                         \
+    {                                                                          \
+        (s) = (a) + (b);                                                       \
+        double _bb = (s) - (a);                                                \
+        (e) = ((a) - ((s)-_bb)) + ((b)-_bb);                                   \
+    } while (0)
+
+    // two_prod_fma(a,b) -> (p,e): p+e = a*b exactly (requires FMA)
+#define DD_TWO_PROD(a, b, p, e)                                                \
+    do                                                                         \
+    {                                                                          \
+        (p) = (a) * (b);                                                       \
+        (e) = fma((a), (b), -(p));                                             \
+    } while (0)
+
+    // expm1(r) = r + r^2*(1/2! + r/3! + ... + r^13/15!)
+    // 15-term Taylor series: at |r|<=ln2/2≈0.347 the first omitted term
+    // r^16/16! ≈ 9.7e-20 ≈ 0.002 ULP(result), giving sub-ULP truncation error.
+    // (The previous 12-term series had r^13/13! ≈ 1.7e-16 ≈ 3 ULP truncation.)
+    // p(r) = 1/2! + r/3! + ... + r^13/15!  evaluated via DD Horner.
+    static const double cc[] = {
+        0.5, // 1/2!  c[0]
+        1.0 / 6.0, // 1/3!  c[1]
+        1.0 / 24.0, // 1/4!  c[2]
+        1.0 / 120.0, // 1/5!  c[3]
+        1.0 / 720.0, // 1/6!  c[4]
+        1.0 / 5040.0, // 1/7!  c[5]
+        1.0 / 40320.0, // 1/8!  c[6]
+        1.0 / 362880.0, // 1/9!  c[7]
+        1.0 / 3628800.0, // 1/10! c[8]
+        1.0 / 39916800.0, // 1/11! c[9]
+        1.0 / 479001600.0, // 1/12! c[10]
+        1.0 / 6227020800.0, // 1/13! c[11]
+        1.0 / 87178291200.0, // 1/14! c[12]
+        1.0 / 1307674368000.0, // 1/15! c[13]
+    };
+
+    // Initialise with the smallest term: p = c[13] = 1/15!
+    double phi = cc[13], plo = 0.0;
+
+    // DD Horner: (phi,plo) = c[k] + r*(phi,plo)  for k = 12 downto 0
+    for (int k = 12; k >= 0; --k)
+    {
+        // m = r * (phi + plo)  in DD
+        double mhi, mlo;
+        DD_TWO_PROD(r, phi, mhi, mlo);
+        mlo += r * plo; // second-order cross term (plain double ok)
+        // (phi, plo) = cc[k] + (mhi + mlo)
+        double shi, slo;
+        DD_TWO_SUM(cc[k], mhi, shi, slo);
+        phi = shi;
+        plo = slo + mlo;
+    }
+
+    // Compute r^2 in DD
+    double r2hi, r2lo;
+    DD_TWO_PROD(r, r, r2hi, r2lo);
+
+    // r^2 * p in DD: dominant term r2hi*phi, corrections r2lo*phi + r2hi*plo
+    double r2phi, r2plo;
+    DD_TWO_PROD(r2hi, phi, r2phi, r2plo);
+    r2plo += r2lo * phi + r2hi * plo;
+
+    // expm1(r) = r + r^2*p  in DD
+    double em1hi, em1lo;
+    DD_TWO_SUM(r, r2phi, em1hi, em1lo);
+    em1lo += r2plo;
+    double em1r = em1hi + em1lo; // round to double: ~0.5 ULP of true expm1(r)
+
+#undef DD_TWO_SUM
+#undef DD_TWO_PROD
+
+    // --- Reconstruct: expm1(x) = (2^n - 1) + 2^n * expm1(r) ---
+    // ldexp(1.0, n) is exact; (2^n - 1) is exact for n<=0 by Sterbenz.
+    double pow2n = ldexp(1.0, n);
+    double result = (pow2n - 1.0) + pow2n * em1r;
+    return (long double)result;
 #else
     if (reference_isnanl(x)) return x;
 
