@@ -191,21 +191,21 @@ using SourceGenerator = std::string (*)(const std::string &kernel_name,
 cl_int BuildKernels(BuildKernelInfo &info, cl_uint job_id,
                     SourceGenerator generator);
 
-const size_t getInputCount();
+uint64_t getInputCount();
 void initInputCount(int wimpyReductionFactor);
 
 template <typename T>
-void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
+void fillUnaryInput(T *data, size_t num_elems, uint64_t base_elem, MTdata d,
                     bool testAll = false, size_t totalSpecialValuesCount = 0,
                     size_t hold = 1);
 
 template <typename T1, typename T2>
-void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
+void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, uint64_t base_elem,
                      MTdata d, bool testAll = false);
 
 template <typename T1, typename T2, typename T3>
 void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
-                      size_t base_elem, MTdata d);
+                      uint64_t base_elem, MTdata d);
 
 
 #endif /* COMMON_H */

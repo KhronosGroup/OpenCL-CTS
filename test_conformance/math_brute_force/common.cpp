@@ -879,7 +879,7 @@ void initInputCount(int wimpyReductionFactor)
             getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
     }
 }
-const size_t getInputCount() { return 1LL << input_count_power_of_two; }
+uint64_t getInputCount() { return 1ULL << input_count_power_of_two; }
 
 template <typename T> const std::vector<T> &get_special_values();
 template <> inline const std::vector<cl_half> &get_special_values<cl_half>()
@@ -956,7 +956,7 @@ template <typename IntType> struct RandomFiller<2, IntType>
 };
 
 template <typename T>
-void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
+void fillUnaryInput(T *data, size_t num_elems, uint64_t base_elem, MTdata d,
                     bool testAll, size_t totalSpecialValuesCount, size_t hold)
 {
     typedef typename int_type_of_size<sizeof(T)>::type IntType;
@@ -980,7 +980,7 @@ void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
          idx++)
     {
         size_t specialValuesIdx =
-            ((base_elem + idx) / hold) % specialValuesCount;
+            (size_t)(((base_elem + idx) / hold) % specialValuesCount);
         data[idx] = specialValues[specialValuesIdx];
     }
 
@@ -988,7 +988,7 @@ void fillUnaryInput(T *data, size_t num_elems, size_t base_elem, MTdata d,
 }
 
 template <typename T1, typename T2>
-void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
+void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, uint64_t base_elem,
                      MTdata d, bool testAll)
 {
     const std::vector<T1> &specialValues1 = get_special_values<T1>();
@@ -998,7 +998,7 @@ void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
     size_t hold = specialValues1.size();
     if constexpr (((sizeof(T1) + sizeof(T2)) * CHAR_BIT) <= 32)
     {
-        if (testAll) hold = 1ULL << (sizeof(T1) * CHAR_BIT);
+        if (testAll) hold = (size_t)1 << (sizeof(T1) * CHAR_BIT);
     }
     else
     {
@@ -1011,7 +1011,7 @@ void fillBinaryInput(T1 *data1, T2 *data2, size_t num_elems, size_t base_elem,
 
 template <typename T1, typename T2, typename T3>
 void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
-                      size_t base_elem, MTdata d)
+                      uint64_t base_elem, MTdata d)
 {
     const std::vector<T1> &specialValues1 = get_special_values<T1>();
     const std::vector<T2> &specialValues2 = get_special_values<T2>();
@@ -1025,33 +1025,33 @@ void fillTernaryInput(T1 *data1, T2 *data2, T3 *data3, size_t num_elems,
                    specialValues1.size() * specialValues2.size());
 }
 
-template void fillUnaryInput<cl_half>(cl_half *, size_t, size_t, MTdata, bool,
+template void fillUnaryInput<cl_half>(cl_half *, size_t, uint64_t, MTdata, bool,
                                       size_t, size_t);
-template void fillUnaryInput<float>(float *, size_t, size_t, MTdata, bool,
+template void fillUnaryInput<float>(float *, size_t, uint64_t, MTdata, bool,
                                     size_t, size_t);
-template void fillUnaryInput<double>(double *, size_t, size_t, MTdata, bool,
+template void fillUnaryInput<double>(double *, size_t, uint64_t, MTdata, bool,
                                      size_t, size_t);
-template void fillUnaryInput<int>(int *, size_t, size_t, MTdata, bool, size_t,
+template void fillUnaryInput<int>(int *, size_t, uint64_t, MTdata, bool, size_t,
                                   size_t);
 
 template void fillBinaryInput<cl_half, cl_half>(cl_half *, cl_half *, size_t,
-                                                size_t, MTdata, bool);
-template void fillBinaryInput<float, float>(float *, float *, size_t, size_t,
+                                                uint64_t, MTdata, bool);
+template void fillBinaryInput<float, float>(float *, float *, size_t, uint64_t,
                                             MTdata, bool);
 template void fillBinaryInput<double, double>(double *, double *, size_t,
-                                              size_t, MTdata, bool);
-template void fillBinaryInput<int, cl_half>(int *, cl_half *, size_t, size_t,
+                                              uint64_t, MTdata, bool);
+template void fillBinaryInput<int, cl_half>(int *, cl_half *, size_t, uint64_t,
                                             MTdata, bool);
-template void fillBinaryInput<int, float>(int *, float *, size_t, size_t,
+template void fillBinaryInput<int, float>(int *, float *, size_t, uint64_t,
                                           MTdata, bool);
-template void fillBinaryInput<int, double>(int *, double *, size_t, size_t,
+template void fillBinaryInput<int, double>(int *, double *, size_t, uint64_t,
                                            MTdata, bool);
 
 template void fillTernaryInput<cl_half, cl_half, cl_half>(cl_half *, cl_half *,
                                                           cl_half *, size_t,
-                                                          size_t, MTdata);
+                                                          uint64_t, MTdata);
 template void fillTernaryInput<float, float, float>(float *, float *, float *,
-                                                    size_t, size_t, MTdata);
+                                                    size_t, uint64_t, MTdata);
 template void fillTernaryInput<double, double, double>(double *, double *,
-                                                       double *, size_t, size_t,
-                                                       MTdata);
+                                                       double *, size_t,
+                                                       uint64_t, MTdata);
