@@ -97,7 +97,7 @@ static int test_image_type(cl_device_id device, cl_context context,
 
     log_info( "Running %s tests...\n", name );
 
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
 
     // Grab the list of supported image formats
     std::vector<cl_image_format> formatList;
@@ -131,7 +131,7 @@ static int test_image_type(cl_device_id device, cl_context context,
                     int test_return =
                         test_fn(device, context, queue, &formatList[i], flags,
                                 test.explicitType, ctx);
-                    if (test_return)
+                    if (test_return && test_return != TEST_SKIPPED_ITSELF)
                     {
                         gFailCount++;
                         log_error("FAILED: ");
@@ -139,7 +139,7 @@ static int test_image_type(cl_device_id device, cl_context context,
                         log_info("\n");
                     }
 
-                    ret += test_return;
+                    ret = combine_test_results(ret, test_return);
                 }
             }
         }
@@ -154,14 +154,11 @@ int test_image_set(cl_device_id device, cl_context context,
                    cl_channel_type channel_type,
                    const image_test_context_t &ctx)
 {
-    int ret = 0;
     cl_mem_flags flags = CL_MEM_READ_ONLY;
     if (ctx.enablePitch && image_type != CL_MEM_OBJECT_IMAGE1D_BUFFER)
     {
         flags |= CL_MEM_USE_HOST_PTR;
     }
-    ret += test_image_type(device, context, queue, image_type, flags,
+    return test_image_type(device, context, queue, image_type, flags,
                            channel_type, ctx);
-
-    return ret;
 }

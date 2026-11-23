@@ -35,7 +35,7 @@ int test_image_type(cl_device_id device, cl_context context,
     }
 
 
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     {
         if (ctx.testMipmaps)
             log_info("Running mipmapped %s tests...\n",
@@ -74,8 +74,13 @@ int test_image_type(cl_device_id device, cl_context context,
         }
 
         std::vector<bool> filterFlags(formatList.size(), false);
-        filter_formats(formatList, filterFlags, nullptr,
-                       test_config.channel_type, ctx.channelOrderToUse);
+        if (filter_formats(formatList, filterFlags, nullptr,
+                           test_config.channel_type, ctx.channelOrderToUse)
+            == 0)
+        {
+            log_info("No formats supported for %s\n", test_config.name.c_str());
+            return TEST_SKIPPED_ITSELF;
+        }
 
         // Run the format list
         for (unsigned int i = 0; i < formatList.size(); i++)
@@ -95,7 +100,7 @@ int test_image_type(cl_device_id device, cl_context context,
                                  test_config.src_type, test_config.dst_flags,
                                  test_config.dst_type, &formatList[i], ctx);
 
-            if (test_return)
+            if (test_return && test_return != TEST_SKIPPED_ITSELF)
             {
                 gFailCount++;
                 log_error("FAILED: ");
@@ -103,7 +108,7 @@ int test_image_type(cl_device_id device, cl_context context,
                 log_info("\n");
             }
 
-            ret += test_return;
+            ret = combine_test_results(ret, test_return);
         }
     }
 

@@ -46,15 +46,20 @@ int test_image_type(cl_device_id device, cl_context context,
 {
     log_info( "Running %s %s-only tests...\n", convert_image_type_to_string(image_type), flags == CL_MEM_READ_ONLY ? "read" : "write" );
 
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
 
     // Grab the list of supported image formats for integer reads
     std::vector<cl_image_format> formatList;
     if (get_format_list(context, image_type, formatList, flags)) return -1;
 
     std::vector<bool> filterFlags(formatList.size(), false);
-    filter_formats(formatList, filterFlags, nullptr, channel_type,
-                   ctx.channelOrderToUse);
+    if (filter_formats(formatList, filterFlags, nullptr, channel_type,
+                       ctx.channelOrderToUse)
+        == 0)
+    {
+        log_info("No matching formats supported\n");
+        return TEST_SKIPPED_ITSELF;
+    }
 
     // Run the format list
     for (unsigned int i = 0; i < formatList.size(); i++)
@@ -98,14 +103,15 @@ int test_image_type(cl_device_id device, cl_context context,
               break;
         }
 
-        if (test_return) {
+        if (test_return && test_return != TEST_SKIPPED_ITSELF)
+        {
             gFailCount++;
             log_error( "FAILED: " );
             print_header( &formatList[ i ], true );
             log_info( "\n" );
         }
 
-        ret += test_return;
+        ret = combine_test_results(ret, test_return);
     }
 
     return ret;
@@ -115,12 +121,10 @@ int test_image_set(cl_device_id device, cl_context context,
                    cl_mem_object_type image_type, cl_channel_type channel_type,
                    const image_test_context_t& ctx)
 {
-    int ret = 0;
+    int read_ret = test_image_type(device, context, image_type,
+                                   CL_MEM_READ_ONLY, channel_type, ctx);
+    int write_ret = test_image_type(device, context, image_type,
+                                    CL_MEM_WRITE_ONLY, channel_type, ctx);
 
-    ret += test_image_type(device, context, image_type, CL_MEM_READ_ONLY,
-                           channel_type, ctx);
-    ret += test_image_type(device, context, image_type, CL_MEM_WRITE_ONLY,
-                           channel_type, ctx);
-
-    return ret;
+    return combine_test_results(read_ret, write_ret);
 }

@@ -92,7 +92,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
             break;
     }
 
-    if ( ret != 0 )
+    if (ret != 0 && ret != TEST_SKIPPED_ITSELF)
     {
         gFailCount++;
         log_error( "FAILED: " );
@@ -111,7 +111,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             cl_mem_object_type imageType,
                             const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     imageSampler->normalized_coords = false;
     log_info( "read_image (%s coords, %s results) *****************************\n",
               "integer", get_explicit_type_name( outputType ) );
@@ -123,8 +123,10 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
         const cl_image_format &imageFormat = formatList[i];
 
-        ret |= test_read_image_type(device, context, queue, &imageFormat,
-                                    imageSampler, outputType, imageType, ctx);
+        ret = combine_test_results(
+            ret,
+            test_read_image_type(device, context, queue, &imageFormat,
+                                 imageSampler, outputType, imageType, ctx));
     }
     return ret;
 }
@@ -135,7 +137,7 @@ int test_image_set(cl_device_id device, cl_context context,
                    cl_channel_type channel_type,
                    const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     static int printedFormatList = -1;
 
     // Grab the list of supported image formats
@@ -206,9 +208,11 @@ int test_image_set(cl_device_id device, cl_context context,
             else
             {
                 imageSampler.filter_mode = CL_FILTER_NEAREST;
-                ret += test_read_image_formats(
-                    device, context, queue, formatList, filterFlags,
-                    &imageSampler, test.explicitType, imageType, ctx);
+                ret = combine_test_results(
+                    ret,
+                    test_read_image_formats(device, context, queue, formatList,
+                                            filterFlags, &imageSampler,
+                                            test.explicitType, imageType, ctx));
             }
         }
     }

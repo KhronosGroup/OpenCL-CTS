@@ -65,6 +65,14 @@ struct ImageTestTypes
 
 extern std::array<ImageTestTypes, 3> imageTestTypes;
 
+inline int combine_test_results(int a, int b)
+{
+    if (a != TEST_PASS && a != TEST_SKIPPED_ITSELF) return a;
+    if (b != TEST_PASS && b != TEST_SKIPPED_ITSELF) return b;
+    if (a == TEST_PASS || b == TEST_PASS) return TEST_PASS;
+    return TEST_SKIPPED_ITSELF;
+}
+
 int filter_formats(const std::vector<cl_image_format> &formatList,
                    std::vector<bool> &filterFlags,
                    cl_channel_type *channelDataTypesToFilter,

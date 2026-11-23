@@ -49,7 +49,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
                          ExplicitType outputType, cl_mem_object_type imageType,
                          const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     cl_addressing_mode *addressModes = NULL;
 
     // The sampler-less read image functions behave exactly as the corresponding
@@ -85,7 +85,7 @@ int test_read_image_type(cl_device_id device, cl_context context,
     {
         log_info("--- Skipping CL_RGB CL_UNORM_INT_101010 format with "
                  "CL_FILTER_LINEAR on GPU.\n");
-        return 0;
+        return TEST_SKIPPED_ITSELF;
     }
 #endif
 
@@ -144,14 +144,14 @@ int test_read_image_type(cl_device_id device, cl_context context,
                                                  outputType, ctx);
                 break;
         }
-        if (retCode != 0)
+        if (retCode != 0 && retCode != TEST_SKIPPED_ITSELF)
         {
             gFailCount++;
             log_error("FAILED: ");
             print_read_header(format, imageSampler, true);
             log_info("\n");
         }
-        ret |= retCode;
+        ret = combine_test_results(ret, retCode);
     }
 
     return ret;
@@ -166,7 +166,7 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                             cl_mem_object_type imageType,
                             const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     bool flipFlop[2] = { false, true };
     int normalizedIdx, floatCoordIdx;
 
@@ -179,14 +179,14 @@ int test_read_image_formats(cl_device_id device, cl_context context,
                      "cl_khr_mipmap_image.\nSkipping mipmapped image test. \n");
             log_info(
                 "-----------------------------------------------------\n\n");
-            return 0;
+            return TEST_SKIPPED_ITSELF;
         }
     }
 
     // Use this run if we were told to only run a certain filter mode
     if (ctx.filterModeToUse != (cl_filter_mode)-1
         && imageSampler->filter_mode != ctx.filterModeToUse)
-        return 0;
+        return TEST_SKIPPED_ITSELF;
 
     // Test normalized/non-normalized
     for (normalizedIdx = 0; normalizedIdx < 2; normalizedIdx++)
@@ -227,10 +227,11 @@ int test_read_image_formats(cl_device_id device, cl_context context,
 
                 const cl_image_format &imageFormat = formatList[i];
 
-                ret |=
+                ret = combine_test_results(
+                    ret,
                     test_read_image_type(device, context, queue, &imageFormat,
                                          flipFlop[floatCoordIdx], imageSampler,
-                                         outputType, imageType, ctx);
+                                         outputType, imageType, ctx));
             }
         }
     }
@@ -243,7 +244,7 @@ int test_image_set(cl_device_id device, cl_context context,
                    cl_mem_object_type imageType, cl_channel_type channel_type,
                    const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     static int printedFormatList = -1;
 
 
@@ -258,7 +259,7 @@ int test_image_set(cl_device_id device, cl_context context,
                 "cl_khr_3d_image_writes.\nSkipping 3d image write test. \n");
             log_info(
                 "-----------------------------------------------------\n\n");
-            return 0;
+            return TEST_SKIPPED_ITSELF;
         }
     }
 
@@ -271,7 +272,7 @@ int test_image_set(cl_device_id device, cl_context context,
                      "cl_khr_mipmap_image.\nSkipping mipmapped image test. \n");
             log_info(
                 "-----------------------------------------------------\n\n");
-            return 0;
+            return TEST_SKIPPED_ITSELF;
         }
         if ((0 == is_extension_available(device, "cl_khr_mipmap_image_writes"))
             && (formatTestFn == test_write_image_formats))
@@ -282,7 +283,7 @@ int test_image_set(cl_device_id device, cl_context context,
                      "write test. \n");
             log_info(
                 "-----------------------------------------------------\n\n");
-            return 0;
+            return TEST_SKIPPED_ITSELF;
         }
     }
 
@@ -375,17 +376,21 @@ int test_image_set(cl_device_id device, cl_context context,
             else
             {
                 imageSampler.filter_mode = CL_FILTER_NEAREST;
-                ret += formatTestFn(device, context, queue, formatList,
-                                    filterFlags, &imageSampler,
-                                    test.explicitType, imageType, ctx);
+                ret = combine_test_results(
+                    ret,
+                    formatTestFn(device, context, queue, formatList,
+                                 filterFlags, &imageSampler, test.explicitType,
+                                 imageType, ctx));
 
                 // Linear filtering is only supported with floats
                 if (test.type == kTestFloat)
                 {
                     imageSampler.filter_mode = CL_FILTER_LINEAR;
-                    ret += formatTestFn(device, context, queue, formatList,
-                                        filterFlags, &imageSampler,
-                                        test.explicitType, imageType, ctx);
+                    ret = combine_test_results(
+                        ret,
+                        formatTestFn(device, context, queue, formatList,
+                                     filterFlags, &imageSampler,
+                                     test.explicitType, imageType, ctx));
                 }
             }
         }

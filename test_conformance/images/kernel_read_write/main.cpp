@@ -78,15 +78,17 @@ static int doTest(cl_device_id device, cl_context context,
                   cl_command_queue queue, cl_mem_object_type imageType,
                   cl_channel_type channel_type, const image_test_context_t &ctx)
 {
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
     bool is_2d_image = imageType == CL_MEM_OBJECT_IMAGE2D;
 
     if (ctx.testTypesToRun & kReadTests)
     {
         image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kReadTests;
-        ret += test_image_set(device, context, queue, test_read_image_formats,
-                              imageType, channel_type, sub_ctx);
+        ret = combine_test_results(
+            ret,
+            test_image_set(device, context, queue, test_read_image_formats,
+                           imageType, channel_type, sub_ctx));
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -104,9 +106,11 @@ static int doTest(cl_device_id device, cl_context context,
                 // for 2.0
                 sub_ctx.memFlagsToUse = CL_MEM_COPY_HOST_PTR;
 
-                ret += test_image_set(device, context, queue,
-                                      test_read_image_formats, imageType,
-                                      channel_type, sub_ctx);
+                ret = combine_test_results(
+                    ret,
+                    test_image_set(device, context, queue,
+                                   test_read_image_formats, imageType,
+                                   channel_type, sub_ctx));
             }
         }
     }
@@ -115,8 +119,10 @@ static int doTest(cl_device_id device, cl_context context,
     {
         image_test_context_t sub_ctx = ctx;
         sub_ctx.testTypesToRun = kWriteTests;
-        ret += test_image_set(device, context, queue, test_write_image_formats,
-                              imageType, channel_type, sub_ctx);
+        ret = combine_test_results(
+            ret,
+            test_image_set(device, context, queue, test_write_image_formats,
+                           imageType, channel_type, sub_ctx));
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -133,9 +139,11 @@ static int doTest(cl_device_id device, cl_context context,
                 sub_ctx.memFlagsToUse = CL_MEM_COPY_HOST_PTR;
                 sub_ctx.testImage2DFromBuffer = true;
 
-                ret += test_image_set(device, context, queue,
-                                      test_write_image_formats, imageType,
-                                      channel_type, sub_ctx);
+                ret = combine_test_results(
+                    ret,
+                    test_image_set(device, context, queue,
+                                   test_write_image_formats, imageType,
+                                   channel_type, sub_ctx));
             }
         }
     }
@@ -164,8 +172,10 @@ static int doTest(cl_device_id device, cl_context context,
         sub_ctx.normalizedModeToUse = false;
         sub_ctx.filterModeToUse = CL_FILTER_NEAREST;
 
-        ret += test_image_set(device, context, queue, test_read_image_formats,
-                              imageType, channel_type, sub_ctx);
+        ret = combine_test_results(
+            ret,
+            test_image_set(device, context, queue, test_read_image_formats,
+                           imageType, channel_type, sub_ctx));
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -185,14 +195,18 @@ static int doTest(cl_device_id device, cl_context context,
                 // for 2.0
                 sub_sub_ctx.memFlagsToUse = CL_MEM_COPY_HOST_PTR;
 
-                ret += test_image_set(device, context, queue,
-                                      test_read_image_formats, imageType,
-                                      channel_type, sub_sub_ctx);
+                ret = combine_test_results(
+                    ret,
+                    test_image_set(device, context, queue,
+                                   test_read_image_formats, imageType,
+                                   channel_type, sub_sub_ctx));
             }
         }
 
-        ret += test_image_set(device, context, queue, test_write_image_formats,
-                              imageType, channel_type, sub_ctx);
+        ret = combine_test_results(
+            ret,
+            test_image_set(device, context, queue, test_write_image_formats,
+                           imageType, channel_type, sub_ctx));
 
         if( is_2d_image && is_extension_available( device, "cl_khr_image2d_from_buffer" ) )
         {
@@ -212,9 +226,11 @@ static int doTest(cl_device_id device, cl_context context,
                 sub_sub_ctx.memFlagsToUse = CL_MEM_COPY_HOST_PTR;
                 sub_sub_ctx.testImage2DFromBuffer = true;
 
-                ret += test_image_set(device, context, queue,
-                                      test_write_image_formats, imageType,
-                                      channel_type, sub_sub_ctx);
+                ret = combine_test_results(
+                    ret,
+                    test_image_set(device, context, queue,
+                                   test_write_image_formats, imageType,
+                                   channel_type, sub_sub_ctx));
             }
         }
     }
