@@ -1,0 +1,151 @@
+name: 'Setup clvk'
+description: 'Clones, builds, and configures clvk OpenCL driver with Lavapipe'
+inputs:
+  runtime:
+    description: 'Install runtime dependencies and configure environment'
+    required: false
+    default: 'true'
+runs:
+  using: "composite"
+  steps:
+    - name: Cache Lavapipe
+      id: cache-lavapipe
+      uses: actions/cache@v6
+      with:
+        path: ${{ github.workspace }}/lavapipe-install
+        key: ubuntu-24.04-lavapipe-${{ env.CLVK_MESA_VERSION }}-${{ env.CLVK_MESA_LLVM_VERSION }}
+
+    - name: Cache clvk
+      id: cache-clvk
+      uses: actions/cache@v6
+      with:
+        path: ${{ github.workspace }}/clvk-install
+        key: ubuntu-24.04-clvk-${{ env.CLVK_VERSION }}-${{ env.CLVK_CLSPV_VERSION }}
+
+    - name: Update apt sources list
+      if: inputs.runtime == 'true' || steps.cache-lavapipe.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        curl -L "https://apt.llvm.org/llvm-snapshot.gpg.key" | sudo apt-key add -
+        echo "deb https://apt.llvm.org/noble/ llvm-toolchain-noble-${CLVK_MESA_LLVM_VERSION} main" | sudo tee -a /etc/apt/sources.list
+
+    - name: Install Runtime Dependencies
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libllvm${CLVK_MESA_LLVM_VERSION} \
+          libvulkan1
+
+    - name: Install Build Dependencies
+      if: steps.cache-lavapipe.outputs.cache-hit != 'true' || steps.cache-clvk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        LLVM_PKGS=""
+        if [ "${{ steps.cache-lavapipe.outputs.cache-hit }}" != "true" ]; then
+          LLVM_PKGS="llvm-${CLVK_MESA_LLVM_VERSION} llvm-${CLVK_MESA_LLVM_VERSION}-dev glslang-tools libelf-dev libdrm-dev bison flex libzstd-dev libexpat1-dev python3-mako python3-yaml python3-pip"
+        fi
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential cmake ninja-build pkg-config \
+          libvulkan-dev zlib1g-dev \
+          $LLVM_PKGS
+
+        if [ "${{ steps.cache-lavapipe.outputs.cache-hit }}" != "true" ]; then
+          python3 -m pip install --break-system-packages "meson>=1.7.0" ninja
+        fi
+
+    - name: Setup ccache
+      if: steps.cache-lavapipe.outputs.cache-hit != 'true' || steps.cache-clvk.outputs.cache-hit != 'true'
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        variant: sccache
+        max-size: 2G
+        key: ubuntu-24.04-clvk
+
+    - name: Checkout Mesa
+      if: steps.cache-lavapipe.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch ${{ env.CLVK_MESA_VERSION }} https://gitlab.freedesktop.org/mesa/mesa.git mesa
+
+    - name: Build and install Lavapipe
+      if: steps.cache-lavapipe.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        export PATH="/usr/lib/llvm-${CLVK_MESA_LLVM_VERSION}/bin:$PATH"
+        export CC="sccache gcc"
+        export CXX="sccache g++"
+
+        meson setup mesa/build mesa \
+          --prefix='${{ github.workspace }}/lavapipe-install' \
+          --buildtype=release \
+          -Dgallium-drivers= \
+          -Dvulkan-drivers=swrast \
+          -Dllvm=enabled \
+          -Dplatforms= \
+          -Dvideo-codecs= \
+          -Dglx=disabled \
+          -Degl=disabled \
+          -Dopengl=false \
+          -Dbuild-tests=false
+        meson compile -C mesa/build
+        meson install -C mesa/build
+        mkdir -p '${{ github.workspace }}/lavapipe-install/include'
+        cp -r mesa/include/vulkan mesa/include/vk_video '${{ github.workspace }}/lavapipe-install/include/'
+
+    - name: Checkout clvk
+      if: steps.cache-clvk.outputs.cache-hit != 'true'
+      uses: actions/checkout@v7
+      with:
+        repository: kpet/clvk
+        ref: ${{ env.CLVK_VERSION }}
+        path: clvk
+        fetch-depth: 1
+
+    - name: Checkout clspv
+      if: steps.cache-clvk.outputs.cache-hit != 'true'
+      uses: actions/checkout@v7
+      with:
+        repository: google/clspv
+        ref: ${{ env.CLVK_CLSPV_VERSION }}
+        path: clspv
+        fetch-depth: 1
+
+    - name: Fetch clspv dependencies
+      if: steps.cache-clvk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        python3 ./clspv/utils/fetch_sources.py --shallow --deps llvm
+
+    - name: Build and install clvk
+      if: steps.cache-clvk.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git -C clvk submodule update --init --depth 1 external/OpenCL-Headers external/SPIRV-Headers external/SPIRV-Tools
+        cmake -S clvk -B clvk/build -G Ninja \
+          -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \
+          -DCCACHE_FOUND=OFF \
+          -DCMAKE_INSTALL_PREFIX='${{ github.workspace }}/clvk-install' \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCLVK_BUILD_TESTS=OFF \
+          -DCLVK_CLSPV_ONLINE_COMPILER=ON \
+          -DCLVK_ENABLE_SPIRV_IL=OFF \
+          -DCLSPV_SOURCE_DIR='${{ github.workspace }}/clspv' \
+          -DCLVK_VULKAN_IMPLEMENTATION=system \
+          -DVulkan_INCLUDE_DIR='${{ github.workspace }}/lavapipe-install/include'
+        cmake --build clvk/build --target OpenCL
+        cmake --install clvk/build --strip
+        mkdir -p '${{ github.workspace }}/clvk-install/etc/OpenCL/vendors'
+        echo '${{ github.workspace }}/clvk-install/libOpenCL.so' > '${{ github.workspace }}/clvk-install/etc/OpenCL/vendors/clvk.icd'
+
+    - name: Configure Environment
+      if: inputs.runtime == 'true'
+      shell: bash
+      run: |
+        echo "OCL_ICD_VENDORS=${{ github.workspace }}/clvk-install/etc/OpenCL/vendors" >> $GITHUB_ENV
+        LVP_ICD=$(ls "${{ github.workspace }}"/lavapipe-install/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+        echo "VK_DRIVER_FILES=$LVP_ICD" >> $GITHUB_ENV
+        echo "VK_ICD_FILENAMES=$LVP_ICD" >> $GITHUB_ENV

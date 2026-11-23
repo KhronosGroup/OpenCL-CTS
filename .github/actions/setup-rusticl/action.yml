@@ -20,7 +20,14 @@ runs:
       uses: actions/cache@v6
       with:
         path: ${{ github.workspace }}/rusticl-install
-        key: ubuntu-24.04-rusticl-${{ env.RUSTICL_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+        key: ubuntu-24.04-rusticl-${{ env.RUSTICL_VERSION }}-${{ env.RUSTICL_LIBCLC_VERSION }}-${{ steps.translator_sha.outputs.sha }}
+
+    - name: Update apt sources list
+      if: inputs.runtime == 'true' || steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        curl -L "https://apt.llvm.org/llvm-snapshot.gpg.key" | sudo apt-key add -
+        echo "deb https://apt.llvm.org/noble/ llvm-toolchain-noble-${RUSTICL_LLVM_VERSION} main" | sudo tee -a /etc/apt/sources.list
 
     - name: Install Runtime Dependencies
       if: inputs.runtime == 'true'
@@ -28,7 +35,7 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y \
-          libclc-${RUSTICL_LLVM_VERSION} \
+          libclang-common-${RUSTICL_LLVM_VERSION}-dev \
           libclang-cpp${RUSTICL_LLVM_VERSION} \
           libllvm${RUSTICL_LLVM_VERSION}
 
@@ -42,7 +49,6 @@ runs:
           libclang-${RUSTICL_LLVM_VERSION}-dev clang-${RUSTICL_LLVM_VERSION} \
           llvm-${RUSTICL_LLVM_VERSION} llvm-${RUSTICL_LLVM_VERSION}-dev \
           libclang-cpp${RUSTICL_LLVM_VERSION}-dev \
-          libclc-${RUSTICL_LLVM_VERSION}-dev \
           libelf-dev libdrm-dev bison flex libzstd-dev zlib1g-dev \
           python3-mako python3-yaml python3-pip
 
@@ -55,9 +61,21 @@ runs:
         fi
         export PATH="$HOME/.cargo/bin:$PATH"
 
-        if ! command -v bindgen &> /dev/null || [[ "$(bindgen --version 2>&1)" != *"0.71.1"* ]]; then
-          cargo install bindgen-cli --version 0.71.1 --force
+        if ! command -v bindgen &> /dev/null || [[ "$(bindgen --version 2>&1)" != *"0.72.1"* ]]; then
+          cargo install bindgen-cli --version 0.72.1 --locked --force
         fi
+
+    - name: Install mesa-libclc
+      if: steps.cache-rusticl.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        LIBCLC_URL="https://gitlab.freedesktop.org/api/v4/projects/karolherbst%2Fmesa-libclc/packages/generic/mesa-libclc/${RUSTICL_LIBCLC_VERSION}"
+        LIBCLC_DIR="${{ github.workspace }}/rusticl-install/share/mesa-libclc"
+        PKGCONFIG_DIR="${{ github.workspace }}/rusticl-install/share/pkgconfig"
+        mkdir -p "$LIBCLC_DIR" "$PKGCONFIG_DIR"
+        curl -fLsS "$LIBCLC_URL/spirv-mesa3d-.spv" -o "$LIBCLC_DIR/spirv-mesa3d-.spv"
+        curl -fLsS "$LIBCLC_URL/spirv64-mesa3d-.spv" -o "$LIBCLC_DIR/spirv64-mesa3d-.spv"
+        curl -fLsS "$LIBCLC_URL/mesa-libclc.pc.in" | sed "s|^libexecdir=.*|libexecdir=$LIBCLC_DIR|" > "$PKGCONFIG_DIR/mesa-libclc.pc"
 
     - name: Build and install SPIRV-Tools
       if: steps.cache-rusticl.outputs.cache-hit != 'true'

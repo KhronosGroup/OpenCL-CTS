@@ -58,10 +58,6 @@ runs:
           libhwloc-dev zlib1g-dev libxml2-dev \
           ocl-icd-dev ocl-icd-opencl-dev
 
-    - name: Setup Ninja
-      if: steps.cache-pocl.outputs.cache-hit != 'true'
-      uses: seanmiddleditch/gha-setup-ninja@master
-
     - name: Checkout SPIRV-LLVM-Translator
       if: steps.cache-pocl.outputs.cache-hit != 'true'
       uses: actions/checkout@v7

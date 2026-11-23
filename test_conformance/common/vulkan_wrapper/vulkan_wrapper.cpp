@@ -1613,8 +1613,10 @@ void VulkanCommandBuffer::pipelineBarrier(const VulkanImage2DList &image2DList,
         VkImageMemoryBarrier vkImageMemoryBarrier = {};
         vkImageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
         vkImageMemoryBarrier.pNext = NULL;
-        vkImageMemoryBarrier.srcAccessMask = 0;
-        vkImageMemoryBarrier.dstAccessMask = 0;
+        vkImageMemoryBarrier.srcAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        vkImageMemoryBarrier.dstAccessMask =
+            VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
         vkImageMemoryBarrier.oldLayout = (VkImageLayout)oldImageLayout;
         vkImageMemoryBarrier.newLayout = (VkImageLayout)newImageLayout;
         vkImageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

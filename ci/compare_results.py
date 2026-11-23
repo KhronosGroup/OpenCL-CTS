@@ -36,7 +36,7 @@ def categorize_difference(cmd, sub_test, expected, actual):
     else:
         return f"{YELLOW} DIFFERENCE: [{cmd}] '{sub_test}' expected '{expected}', but got '{actual}'.{RESET}"
 
-def compare_test_subset(cmd, actual_results, expected_results, differences, missing_refs):
+def compare_test_subset(cmd, args, actual_results, expected_results, differences, missing_refs, missing_entries):
     """Compare the run subset against expectations. Mutates lists and returns error status."""
     has_error = False
 
@@ -44,6 +44,7 @@ def compare_test_subset(cmd, actual_results, expected_results, differences, miss
         # Rule 1: Everything run must exist in the reference
         if sub_test not in expected_results:
             missing_refs.append(f"[{cmd}] Sub-test '{sub_test}' not found in golden reference.")
+            missing_entries.append(f"{cmd}.{args}.{sub_test}.{actual_status}")
             has_error = True
         else:
             expected_status = expected_results[sub_test]
@@ -56,54 +57,77 @@ def compare_test_subset(cmd, actual_results, expected_results, differences, miss
 def process_all_results(results_dir, golden_data):
     """Iterate through all result JSONs and compare them. Returns aggregate data."""
     has_error = False
+    other_error = False
     differences = []
     missing_refs = []
+    missing_entries = []
 
-    if len(list(Path(results_dir).glob("*.json"))) == 0:
+    result_files = sorted(Path(results_dir).glob("*.json"))
+    if len(result_files) == 0:
         print(f"Error: Results directory '{results_dir}' is empty.")
         sys.exit(1)
-    for result_file in Path(results_dir).glob("*.json"):
+    for result_file in result_files:
         with open(result_file, 'r') as f:
             try:
                 data = json.load(f)
             except json.JSONDecodeError:
                 print(f"Error parsing {result_file}. Skipping.")
                 has_error = True
+                other_error = True
                 continue
 
-        cmd = os.path.basename(data.get("cmd"))
+        raw_cmd = data.get("cmd")
+        cmd = os.path.basename(raw_cmd) if raw_cmd else ""
         results = data.get("results", {})
         args = data.get("args", "")
 
         if not cmd:
             print(f"File {result_file} is missing the 'cmd' key. Skipping.")
             has_error = True
+            other_error = True
             continue
 
         if cmd not in golden_data:
             missing_refs.append(f"cmd '{cmd}' not found in golden reference.")
+            for sub_test, actual_status in results.items():
+                missing_entries.append(f"{cmd}.{args}.{sub_test}.{actual_status}")
             has_error = True
             continue
 
         if args not in golden_data[cmd]:
             missing_refs.append(f"args '{args}' not found in golden reference for cmd '{cmd}'.")
+            for sub_test, actual_status in results.items():
+                missing_entries.append(f"{cmd}.{args}.{sub_test}.{actual_status}")
             has_error = True
             continue
 
         # Check the specific results against the reference
-        subset_error = compare_test_subset(cmd, results, golden_data[cmd][args], differences, missing_refs)
+        subset_error = compare_test_subset(
+            cmd, args, results, golden_data[cmd][args], differences, missing_refs, missing_entries
+        )
         if subset_error:
             has_error = True
 
-    return has_error, differences, missing_refs
+    return has_error, other_error, differences, missing_refs, missing_entries
 
-def print_report_and_exit(has_error, differences, missing_refs):
+def print_report_and_exit(golden_path, has_error, other_error, differences, missing_refs, missing_entries):
     """Print the final comparison report and exit with the appropriate status code."""
     if missing_refs:
         print("\n--- Missing References ---")
         for msg in missing_refs:
             print(msg)
         print("\nPlease update the golden reference to include these missing cmd/tests.")
+        if missing_entries and not differences and not other_error:
+            formatted_entries = " ".join(
+                f'"{entry}"' if " " in entry else entry for entry in missing_entries
+            )
+            update_cmd = (
+                f"python3 ./ci/update_golden.py -o {golden_path} "
+                f"{formatted_entries}"
+            )
+            print("\nTo add the missing expected results, run the following command:")
+            print(f"  {update_cmd}")
+            print("Then commit and push the changes.")
 
     if differences:
         print("\n--- Test Differences ---")
@@ -129,10 +153,14 @@ def main():
     golden_data = load_golden_reference(args.golden)
 
     # Process the files and gather all differences without stopping early
-    has_error, differences, missing_refs = process_all_results(results_dir, golden_data)
+    has_error, other_error, differences, missing_refs, missing_entries = process_all_results(
+        results_dir, golden_data
+    )
 
     # Output the findings and exit
-    print_report_and_exit(has_error, differences, missing_refs)
+    print_report_and_exit(
+        args.golden, has_error, other_error, differences, missing_refs, missing_entries
+    )
 
 if __name__ == "__main__":
     main()

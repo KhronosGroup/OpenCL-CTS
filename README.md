@@ -177,7 +177,7 @@ CI job.
 To help verify fixes or check for regressions without running the entire
 conformance test suite, our continuous integration pipeline allows contributors
 to trigger specific tests on Pull Requests against supported OpenCL drivers
-(such as `pocl` and `rusticl`).
+(such as `pocl`, `rusticl`, and `clvk`).
 
 ### How to Trigger Tests
 
@@ -186,7 +186,7 @@ Testing is triggered by adding a special tag to either your
 
 The CI parses the text for the following syntax:
 - `[run-test: <command>]` - runs the test command across all drivers.
-- `[run-test-<driver>: <command>]` - runs the test command only for the specified driver (e.g. `[run-test-pocl: <command>]` or `[run-test-rusticl: <command>]`).
+- `[run-test-<driver>: <command>]` - runs the test command only for the specified driver (e.g. `[run-test-pocl: <command>]`, `[run-test-rusticl: <command>]`, or `[run-test-clvk: <command>]`).
 
 Multiple tags for a single Pull Request are supported.
 
@@ -201,4 +201,5 @@ Run tests targeting specific drivers:
 ```text
 [run-test-pocl: test_bruteforce exp -w -1]
 [run-test-rusticl: test_basic simple_add]
+[run-test-clvk: test_computeinfo]
 ```
