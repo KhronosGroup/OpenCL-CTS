@@ -27,5 +27,11 @@
             "shuffle_copy": "pass",
             "shuffle_function_call": "pass"
         }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
+        }
     }
 }
