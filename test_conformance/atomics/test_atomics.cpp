@@ -83,6 +83,12 @@ struct TestFns
                                 MTdata d);
     bool (*VerifyRefsFloatFn)(size_t size, cl_float *refValues,
                               cl_float finalValue);
+
+    // Unsigned versions
+    cl_uint (*ExpectedValueUIntFn)(size_t size, cl_uint *startRefValues,
+                                   size_t whichDestValue);
+    cl_ulong (*ExpectedValueULongFn)(size_t size, cl_ulong *startRefValues,
+                                     size_t whichDestValue);
 };
 
 bool check_atomic_support(cl_device_id device, bool extended, bool isLocal,
@@ -328,7 +334,13 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
     // If we have an expectedFn, then we need to generate a final value to
     // compare against. If we don't have one, it's because we're comparing ref
     // values only
-    if (testFns.ExpectedValueIntFn != NULL)
+    bool hasExpectedFn = (typeSize == 4)
+        ? (testFns.ExpectedValueIntFn != NULL
+           || (isUnsigned && testFns.ExpectedValueUIntFn != NULL))
+        : (testFns.ExpectedValueLongFn != NULL
+           || (isUnsigned && testFns.ExpectedValueULongFn != NULL));
+
+    if (hasExpectedFn)
     {
         for (size_t i = 0; i < numDestItems; i++)
         {
@@ -338,15 +350,23 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
             if (typeSize == 4)
             {
                 // Int version
-                intVal = testFns.ExpectedValueIntFn(
-                    threadSize, (cl_int *)startRefValues.data(), i);
+                if (isUnsigned && testFns.ExpectedValueUIntFn != NULL)
+                    intVal = testFns.ExpectedValueUIntFn(
+                        threadSize, (cl_uint *)startRefValues.data(), i);
+                else
+                    intVal = testFns.ExpectedValueIntFn(
+                        threadSize, (cl_int *)startRefValues.data(), i);
                 memcpy(expected, &intVal, sizeof(intVal));
             }
             else
             {
                 // Long version
-                longVal = testFns.ExpectedValueLongFn(
-                    threadSize, (cl_long *)startRefValues.data(), i);
+                if (isUnsigned && testFns.ExpectedValueULongFn != NULL)
+                    longVal = testFns.ExpectedValueULongFn(
+                        threadSize, (cl_ulong *)startRefValues.data(), i);
+                else
+                    longVal = testFns.ExpectedValueLongFn(
+                        threadSize, (cl_long *)startRefValues.data(), i);
                 memcpy(expected, &longVal, sizeof(longVal));
             }
 
@@ -432,7 +452,7 @@ int test_atomic_function(cl_device_id deviceID, cl_context context,
             }
         }
     }
-    else if (testFns.ExpectedValueIntFn == NULL)
+    else if (!hasExpectedFn)
     {
         log_error("ERROR: Test doesn't check total or refs; no values are "
                   "verified!\n");
@@ -889,11 +909,21 @@ cl_int test_atomic_min_result_int(size_t size, cl_int *startRefValues,
     return total;
 }
 
+cl_uint test_atomic_min_result_uint(size_t size, cl_uint *startRefValues,
+                                    size_t whichDestValue)
+{
+    cl_uint total = 0x7fffffffL;
+    for (size_t i = 0; i < size; i++)
+    {
+        if (startRefValues[i] < total) total = startRefValues[i];
+    }
+    return total;
+}
+
 void test_atomic_min_gen_int(size_t size, cl_int *startRefValues, MTdata d)
 {
     for (size_t i = 0; i < size; i++)
-        startRefValues[i] =
-            (cl_int)(genrand_int32(d) % 0x3fffffff) + 0x3fffffff;
+        startRefValues[i] = (cl_int)genrand_int32(d);
 }
 
 cl_long test_atomic_min_result_long(size_t size, cl_long *startRefValues,
@@ -907,12 +937,21 @@ cl_long test_atomic_min_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
+cl_ulong test_atomic_min_result_ulong(size_t size, cl_ulong *startRefValues,
+                                      size_t whichDestValue)
+{
+    cl_ulong total = 0x7fffffffffffffffLL;
+    for (size_t i = 0; i < size; i++)
+    {
+        if (startRefValues[i] < total) total = startRefValues[i];
+    }
+    return total;
+}
+
 void test_atomic_min_gen_long(size_t size, cl_long *startRefValues, MTdata d)
 {
     for (size_t i = 0; i < size; i++)
-        startRefValues[i] =
-            (cl_long)(genrand_int32(d)
-                      | (((cl_long)genrand_int32(d) & 0x7fffffffL) << 16));
+        startRefValues[i] = (cl_long)genrand_int64(d);
 }
 
 REGISTER_TEST(atomic_min)
@@ -925,7 +964,12 @@ REGISTER_TEST(atomic_min)
                     NULL,
                     test_atomic_min_result_long,
                     test_atomic_min_gen_long,
-                    NULL };
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    test_atomic_min_result_uint,
+                    test_atomic_min_result_ulong };
 
     if (test_atomic_function_set(
             device, context, queue, num_elements, atom_min_core, set, true,
@@ -960,11 +1004,21 @@ cl_int test_atomic_max_result_int(size_t size, cl_int *startRefValues,
     return total;
 }
 
+cl_uint test_atomic_max_result_uint(size_t size, cl_uint *startRefValues,
+                                    size_t whichDestValue)
+{
+    cl_uint total = 0;
+    for (size_t i = 0; i < size; i++)
+    {
+        if (startRefValues[i] > total) total = startRefValues[i];
+    }
+    return total;
+}
+
 void test_atomic_max_gen_int(size_t size, cl_int *startRefValues, MTdata d)
 {
     for (size_t i = 0; i < size; i++)
-        startRefValues[i] =
-            (cl_int)(genrand_int32(d) % 0x3fffffff) + 0x3fffffff;
+        startRefValues[i] = (cl_int)genrand_int32(d);
 }
 
 cl_long test_atomic_max_result_long(size_t size, cl_long *startRefValues,
@@ -978,12 +1032,21 @@ cl_long test_atomic_max_result_long(size_t size, cl_long *startRefValues,
     return total;
 }
 
+cl_ulong test_atomic_max_result_ulong(size_t size, cl_ulong *startRefValues,
+                                      size_t whichDestValue)
+{
+    cl_ulong total = 0;
+    for (size_t i = 0; i < size; i++)
+    {
+        if (startRefValues[i] > total) total = startRefValues[i];
+    }
+    return total;
+}
+
 void test_atomic_max_gen_long(size_t size, cl_long *startRefValues, MTdata d)
 {
     for (size_t i = 0; i < size; i++)
-        startRefValues[i] =
-            (cl_long)(genrand_int32(d)
-                      | (((cl_long)genrand_int32(d) & 0x7fffffffL) << 16));
+        startRefValues[i] = (cl_long)genrand_int64(d);
 }
 
 REGISTER_TEST(atomic_max)
@@ -996,7 +1059,12 @@ REGISTER_TEST(atomic_max)
                     NULL,
                     test_atomic_max_result_long,
                     test_atomic_max_gen_long,
-                    NULL };
+                    NULL,
+                    NULL,
+                    NULL,
+                    NULL,
+                    test_atomic_max_result_uint,
+                    test_atomic_max_result_ulong };
 
     if (test_atomic_function_set(
             device, context, queue, num_elements, atom_max_core, set, true,
