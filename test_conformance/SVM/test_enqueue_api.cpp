@@ -18,6 +18,9 @@
 
 #include <vector>
 #include <atomic>
+#include <chrono>
+#include <thread>
+#include <memory>
 
 #if !defined(_WIN32)
 #include <unistd.h>
@@ -323,7 +326,7 @@ REGISTER_TEST(svm_enqueue_api)
     // wait for the callback
     while (data.status.load(std::memory_order_acquire) == 0)
     {
-        usleep(1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
     // check if number of SVM pointers returned in the callback matches with
@@ -348,4 +351,69 @@ REGISTER_TEST(svm_enqueue_api)
     }
 
     return 0;
+}
+
+// Tests corrupting the pattern before clEnqueueSVMMemFill is executed
+REGISTER_TEST(svm_memfill_pattern_lifetime)
+{
+    constexpr cl_int FILL_PATTERN = 0x12345678;
+
+    clContextWrapper contextWrapper = nullptr;
+    clCommandQueueWrapper queues[MAXQ];
+    cl_uint num_devices = 0;
+    cl_int err = CL_SUCCESS;
+
+    const size_t svm_size = num_elements * sizeof(cl_int);
+
+    clSVMWrapper svm_ptr;
+    cl_int pattern = FILL_PATTERN;
+    clEventWrapper user_event;
+
+    err =
+        create_cl_objects(device, nullptr, &contextWrapper, nullptr, &queues[0],
+                          &num_devices, CL_DEVICE_SVM_COARSE_GRAIN_BUFFER);
+    test_error_fail(err, "Failed to create cl objects");
+
+    context = contextWrapper;
+    queue = queues[0];
+
+    svm_ptr = clSVMWrapper(context, svm_size, CL_MEM_READ_WRITE);
+    test_assert_error(svm_ptr(), "clSVMAlloc failed");
+
+    user_event = clCreateUserEvent(context, &err);
+    test_error_fail(err, "clCreateUserEvent failed");
+
+    err = clEnqueueSVMMemFill(queue, svm_ptr(), &pattern, sizeof(cl_int),
+                              svm_size, 1, &user_event, nullptr);
+    test_error_fail(err, "clEnqueueSVMMemFill failed");
+
+    /* corrupt pattern while command is blocked */
+    pattern = static_cast<cl_int>(0xDEADBEEF);
+
+    err = clSetUserEventStatus(user_event, CL_COMPLETE);
+    test_error_fail(err, "clSetUserEventStatus failed");
+
+    err = clEnqueueSVMMap(queue, CL_TRUE, CL_MAP_READ, svm_ptr(), svm_size, 0,
+                          nullptr, nullptr);
+    test_error_fail(err, "clEnqueueSVMMap failed");
+
+    cl_int *svm_data = static_cast<cl_int *>(svm_ptr());
+    for (size_t i = 0; i < num_elements; i++)
+    {
+        if (svm_data[i] != FILL_PATTERN)
+        {
+            log_error("Verification failed at index %zu: expected 0x%08x, got "
+                      "0x%08x\n",
+                      i, FILL_PATTERN, svm_data[i]);
+            return TEST_FAIL;
+        }
+    }
+
+    err = clEnqueueSVMUnmap(queue, svm_ptr(), 0, nullptr, nullptr);
+    test_error_fail(err, "clEnqueueSVMUnmap failed");
+
+    err = clFinish(queue);
+    test_error_fail(err, "clFinish failed");
+
+    return TEST_PASS;
 }

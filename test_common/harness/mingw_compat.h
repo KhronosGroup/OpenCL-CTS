@@ -17,7 +17,13 @@
 #define MINGW_COMPAT_H
 
 #if defined(__MINGW32__)
+#ifdef __cplusplus
+extern "C" {
+#endif
 char *basename(char *path);
+#ifdef __cplusplus
+}
+#endif
 #include <malloc.h>
 
 #if defined(__MINGW64__)

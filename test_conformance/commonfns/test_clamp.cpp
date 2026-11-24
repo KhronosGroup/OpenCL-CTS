@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "harness/deviceInfo.h"
+#include "harness/mathHelpers.h"
 #include "harness/typeWrappers.h"
 
 #include "test_base.h"
@@ -159,48 +160,39 @@ const char *clamp_double_scalar_codes[] = {
 
 namespace {
 
+template <typename T> T fmax_reference(T x, T y)
+{
+    if (isnan_fp(x)) return y;
+    if (isnan_fp(y)) return x;
+    return conv_to_dbl(x) < conv_to_dbl(y) ? y : x;
+}
+
+template <typename T> T fmin_reference(T x, T y)
+{
+    if (isnan_fp(x)) return y;
+    if (isnan_fp(y)) return x;
+    return conv_to_dbl(y) < conv_to_dbl(x) ? y : x;
+}
+
 template <typename T>
 int verify_clamp(const T *const x, const T *const minval, const T *const maxval,
                  const T *const outptr, int n, int veclen, bool hasScalarBounds)
 {
-    if (std::is_same<T, half>::value)
+    for (int i = 0; i < n; i++)
     {
-        float t;
-        for (int i = 0; i < n; i++)
+        const int boundIndex = hasScalarBounds ? i / veclen : i;
+        const T t = fmin_reference(fmax_reference(x[i], minval[boundIndex]),
+                                   maxval[boundIndex]);
+        const bool matches =
+            isnan_fp(t) ? isnan_fp(outptr[i]) : fp_value_equals(t, outptr[i]);
+        if (!matches)
         {
-            const int boundIndex = hasScalarBounds ? i / veclen : i;
-            t = std::min(std::max(cl_half_to_float(x[i]),
-                                  cl_half_to_float(minval[boundIndex])),
-                         cl_half_to_float(maxval[boundIndex]));
-            if (!fp_value_equals(t, outptr[i]))
-            {
-                log_error(
-                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, cl_half_to_float(x[i]),
-                    cl_half_to_float(minval[boundIndex]),
-                    cl_half_to_float(maxval[boundIndex]), t,
-                    cl_half_to_float(outptr[i]));
-                return -1;
-            }
-        }
-    }
-    else
-    {
-        T t;
-        for (int i = 0; i < n; i++)
-        {
-            const int boundIndex = hasScalarBounds ? i / veclen : i;
-            t = std::min(std::max(x[i], minval[boundIndex]),
-                         maxval[boundIndex]);
-            if (!fp_value_equals(t, outptr[i]))
-            {
-                log_error(
-                    "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n",
-                    i, conv_to_flt(x[i]), conv_to_flt(minval[boundIndex]),
-                    conv_to_flt(maxval[boundIndex]), conv_to_flt(t),
-                    conv_to_flt(outptr[i]));
-                return -1;
-            }
+            log_error(
+                "%d) verification error: clamp( %a, %a, %a) = *%a vs. %a\n", i,
+                conv_to_dbl(x[i]), conv_to_dbl(minval[boundIndex]),
+                conv_to_dbl(maxval[boundIndex]), conv_to_dbl(t),
+                conv_to_dbl(outptr[i]));
+            return -1;
         }
     }
 

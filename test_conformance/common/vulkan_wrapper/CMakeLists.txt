@@ -7,16 +7,18 @@ set(VULKAN_WRAPPER_SOURCES
 
 # needed by Vulkan wrapper to compile
 set(CMAKE_COMPILE_WARNING_AS_ERROR OFF)
-add_cxx_flag_if_supported(-Wmisleading-indentation)
-add_cxx_flag_if_supported(-Wno-format)
-add_cxx_flag_if_supported(-Wno-error)
-add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
-add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
-add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
-add_cxx_flag_if_supported(-Wno-unused-variable)
-add_cxx_flag_if_supported(-Wno-error=terminate)
-add_cxx_flag_if_supported(-Wno-error=unused-function)
-add_cxx_flag_if_supported(-Wno-error=return-type)
+if(NOT MSVC)
+    add_cxx_flag_if_supported(-Wmisleading-indentation)
+    add_cxx_flag_if_supported(-Wno-format)
+    add_cxx_flag_if_supported(-Wno-error)
+    add_cxx_flag_if_supported(-Wno-error=cpp) # Allow #warning directive
+    add_cxx_flag_if_supported(-Wno-error=unknown-pragmas) # Issue #785
+    add_cxx_flag_if_supported(-Wno-error=asm-operand-widths) # Issue #784
+    add_cxx_flag_if_supported(-Wno-unused-variable)
+    add_cxx_flag_if_supported(-Wno-error=terminate)
+    add_cxx_flag_if_supported(-Wno-error=unused-function)
+    add_cxx_flag_if_supported(-Wno-error=return-type)
+endif()
 
 link_directories(${CLConform_VULKAN_LIBRARIES_DIR})
 
@@ -67,3 +69,9 @@ include_directories (${CLConform_INCLUDE_DIR})
 if (NOT WIN32)
 target_link_libraries(vulkan_wrapper dl)
 endif()
+
+# vulkan_wrapper calls OpenCL APIs (e.g. clCreateBufferWithProperties), so it
+# depends on the OpenCL library. Declaring the dependency makes the linker see
+# OpenCL after libvulkan_wrapper.a; otherwise strict left-to-right linkers such
+# as MinGW ld fail with undefined references because -lOpenCL precedes it.
+target_link_libraries(vulkan_wrapper ${OPENCL_LIBRARIES})

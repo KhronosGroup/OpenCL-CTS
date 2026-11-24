@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "harness/deviceInfo.h"
+#include "harness/mathHelpers.h"
 #include "harness/stringHelpers.h"
 #include "harness/typeWrappers.h"
 
@@ -71,6 +72,19 @@ bool is_half_ftz_zero_allowed(const T input, const T output,
     }
 }
 
+template <typename T> bool is_special_input(const T input)
+{
+    const double value = conv_to_dbl(input);
+    return isnan_fp(input) || std::isinf(value) || value == 0.0;
+}
+
+// Expects a NaN, infinity, or signed-zero input.
+template <typename T>
+bool is_special_value_preserved(const T input, const T output)
+{
+    return isnan_fp(input) ? isnan_fp(output) : fp_value_equals(input, output);
+}
+
 template <typename T>
 int verify_degrees(const T *const inptr, const T *const outptr, int n)
 {
@@ -80,12 +94,17 @@ int verify_degrees(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        if (conv_to_dbl(inptr[i]) == 0.0
-            && !fp_value_equals(inptr[i], outptr[i]))
+        if (is_special_input(inptr[i]))
         {
-            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
-                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
-            return 1;
+            if (!is_special_value_preserved(inptr[i], outptr[i]))
+            {
+                log_error("%d) verification error: degrees(%a): expected %a, "
+                          "got %a\n",
+                          i, conv_to_dbl(inptr[i]), conv_to_dbl(inptr[i]),
+                          conv_to_dbl(outptr[i]));
+                return 1;
+            }
+            continue;
         }
 
         r = (180.0 / M_PI) * conv_to_dbl(inptr[i]);
@@ -140,12 +159,17 @@ int verify_radians(const T *const inptr, const T *const outptr, int n)
 
     for (int i = 0; i < n; i++)
     {
-        if (conv_to_dbl(inptr[i]) == 0.0
-            && !fp_value_equals(inptr[i], outptr[i]))
+        if (is_special_input(inptr[i]))
         {
-            log_error("%d) Error @ %a: expected signed zero, got %a\n", i,
-                      conv_to_flt(inptr[i]), conv_to_flt(outptr[i]));
-            return 1;
+            if (!is_special_value_preserved(inptr[i], outptr[i]))
+            {
+                log_error("%d) verification error: radians(%a): expected %a, "
+                          "got %a\n",
+                          i, conv_to_dbl(inptr[i]), conv_to_dbl(inptr[i]),
+                          conv_to_dbl(outptr[i]));
+                return 1;
+            }
+            continue;
         }
 
         r = (M_PI / 180.0) * conv_to_dbl(inptr[i]);
