@@ -5287,7 +5287,7 @@ long double reference_remquol(long double xd, long double yd, int *n)
 {
     if (reference_isinf(x) || reference_isnan(x) || x == 0.0) return x;
     if (n >= 2098) return reference_copysign(INFINITY, x);
-    if (n <= -2097) return reference_copysign(0.0, x);
+    if (n <= -2099) return reference_copysign(0.0, x);
 
     union {
         double d;
@@ -5684,7 +5684,7 @@ double reference_ldexp(double value, int exponent)
 
 long double reference_ldexpl(long double x, int n)
 {
-#if LDBL_MANT_DIG == DBL_MANT_DIG
+#if LDBL_MANT_DIG == DBL_MANT_DIG && LDBL_MAX_EXP == DBL_MAX_EXP
     // On platforms where long double has no more precision than double (e.g.
     // MSVC), the CRT ldexpl can mis-round subnormal results. Route through
     // reference_scalbn, which rounds subnormal results correctly.
