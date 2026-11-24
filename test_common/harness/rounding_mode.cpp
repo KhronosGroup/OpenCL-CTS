@@ -219,9 +219,9 @@ void *FlushToZero(void)
     _FPU_SETCW(fpscr | FPSCR_FZ);
     return NULL;
 #elif defined(_M_ARM64) // Visual Studio
-    uint64_t fpscr;
-    fpscr = _ReadStatusReg(ARM64_FPSR);
-    _WriteStatusReg(ARM64_FPCR, fpscr | (1U << 24));
+    uint64_t fpcr;
+    fpcr = _ReadStatusReg(ARM64_FPCR);
+    _WriteStatusReg(ARM64_FPCR, fpcr | (1ULL << 24));
     return NULL;
 #elif defined(__PPC__)
     fpu_control_t flags = 0;
@@ -259,9 +259,9 @@ void UnFlushToZero(void *p)
     _FPU_GETCW(fpscr);
     _FPU_SETCW(fpscr & ~FPSCR_FZ);
 #elif defined(_M_ARM64) // Visual Studio
-    uint64_t fpscr;
-    fpscr = _ReadStatusReg(ARM64_FPSR);
-    _WriteStatusReg(ARM64_FPCR, fpscr & ~(1U << 24));
+    uint64_t fpcr;
+    fpcr = _ReadStatusReg(ARM64_FPCR);
+    _WriteStatusReg(ARM64_FPCR, fpcr & ~(1ULL << 24));
 #elif defined(__PPC__)
     fpu_control_t flags = 0;
     _FPU_GETCW(flags);
