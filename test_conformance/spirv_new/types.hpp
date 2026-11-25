@@ -17,6 +17,7 @@
 #pragma once
 #include <CL/cl.h>
 #include <CL/cl_half.h>
+#include <type_traits>
 
 #if defined(_MSC_VER)
 #define PACKED(__STRUCT__) __pragma(pack(push, 1)) __STRUCT__ __pragma(pack(pop))
@@ -102,12 +103,26 @@ template <typename T> T genrandReal_range(T low, T high, RandomSeed &seed)
     return (1.0 - t) * low + t * high;
 }
 
-template<typename T, int N>
-T genrandRealVec(RandomSeed &seed)
+template <>
+inline cl_half genrandReal_range<cl_half>(cl_half low, cl_half high,
+                                          RandomSeed &seed)
+{
+    double t = genrand_real1(seed);
+    double d = (1.0 - t) * cl_half_to_float(low) + t * cl_half_to_float(high);
+    return cl_half_from_float((float)d, CL_HALF_RTE);
+}
+
+template <typename T, int N> T genrandRealVec(RandomSeed &seed)
 {
     T res;
-    for (int i = 0; i < N; i++) {
-        res.s[i] = genrand_real1(seed);
+    for (int i = 0; i < N; i++)
+    {
+        if constexpr (std::is_same_v<
+                          std::remove_reference_t<decltype(res.s[0])>, cl_half>)
+            res.s[i] = cl_half_from_float((float)(1.0 + genrand_real1(seed)),
+                                          CL_HALF_RTE);
+        else
+            res.s[i] = genrand_real1(seed);
     }
     return res;
 }
