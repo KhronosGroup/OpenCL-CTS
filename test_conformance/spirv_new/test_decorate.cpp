@@ -188,10 +188,11 @@ static inline Ti generate_saturated_lhs_input(RandomSeed &seed)
 
     if (std::is_same<cl_half, Ti>::value)
     {
-        return cl_half_from_float(genrand<float>(seed) * range, CL_HALF_RTE);
+        return cl_half_from_float((float)genrand_real1(seed) * range,
+                                  CL_HALF_RTE);
     }
 
-    return genrand<Ti>(seed) * range;
+    return (Ti)genrand_real1(seed) * range;
 }
 
 template <typename Ti, typename Tl, typename To>
