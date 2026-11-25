@@ -1,0 +1,48 @@
+; Source kernel:
+;
+; __attribute__((always_inline))
+; int inline_function()
+; {
+;     return 100;
+; }
+; __attribute((optnone))
+; int optnone_function()
+; {
+;     return 200 + inline_function();
+; }
+; kernel void test_optnone(global int* dst)
+; {
+;     dst[0] = optnone_function();
+; }
+
+               OpCapability Addresses
+               OpCapability Linkage
+               OpCapability Kernel
+               OpCapability OptNoneEXT
+               OpExtension "SPV_EXT_optnone"
+               OpMemoryModel Physical32 OpenCL
+               OpEntryPoint Kernel %kernel "test_optnone"
+       %uint = OpTypeInt 32 0
+   %uint_100 = OpConstant %uint 100
+   %uint_200 = OpConstant %uint 200
+   %func_sig = OpTypeFunction %uint
+       %void = OpTypeVoid
+  %gptr_uint = OpTypePointer CrossWorkgroup %uint
+ %kernel_sig = OpTypeFunction %void %gptr_uint
+%inline_function = OpFunction %uint Inline %func_sig
+%inline_function_entry = OpLabel
+               OpReturnValue %uint_100
+               OpFunctionEnd
+%optnone_function = OpFunction %uint DontInline|OptNoneEXT %func_sig
+%optnone_function_entry = OpLabel
+%call_inline_function = OpFunctionCall %uint %inline_function
+        %add = OpIAdd %uint %uint_200 %call_inline_function
+               OpReturnValue %add
+               OpFunctionEnd
+     %kernel = OpFunction %void None %kernel_sig
+        %dst = OpFunctionParameter %gptr_uint
+      %entry = OpLabel
+%call_optnone_function = OpFunctionCall %uint %optnone_function
+               OpStore %dst %call_optnone_function Aligned 4
+               OpReturn
+               OpFunctionEnd

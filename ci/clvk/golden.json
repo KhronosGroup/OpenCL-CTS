@@ -122,5 +122,11 @@
             "extended_versioning": "pass",
             "pci_bus_info": "skip"
         }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
+        }
     }
 }

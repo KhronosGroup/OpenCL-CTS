@@ -394,9 +394,13 @@ struct RecordUnsupportedPropTest : public BasicCommandBufferTest
         // Check if either of these properties is unsupported for command-buffer
         // enqueue, in which case test that it is still valid to use for
         // command-buffer recording.
-        const cl_command_queue_properties test_props[] = {
-            CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE, CL_QUEUE_PROFILING_ENABLE
+        std::vector<cl_command_queue_properties> test_props = {
+            CL_QUEUE_PROFILING_ENABLE
         };
+        if (queue_out_of_order_support)
+        {
+            test_props.push_back(CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+        }
         for (const auto& prop : test_props)
         {
             if ((supported_properties & prop) == 0)
