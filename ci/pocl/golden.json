@@ -397,6 +397,8 @@
             "op_spec_constant_uint_simple": "pass",
             "op_spec_constant_ulong_simple": "pass",
             "op_spec_constant_ushort_simple": "pass",
+            "op_vector_half8_extract": "pass",
+            "op_vector_times_scalar_half": "pass",
             "ptr_access_chain_array": "pass",
             "ptr_access_chain_inbounds_array": "pass",
             "ptr_access_chain_inbounds_vector": "pass",

@@ -28,6 +28,12 @@
             "shuffle_function_call": "pass"
         }
     },
+    "test_spirv_new": {
+        "": {
+            "op_vector_half8_extract": "pass",
+            "op_vector_times_scalar_half": "pass"
+        }
+    },
     "test_subgroups": {
         "": {
             "ifp_core": "skip",
