@@ -519,15 +519,19 @@ public:
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::IterationsStr;
     using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::LocalMemory;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DeviceThreads;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MaxHostThreads;
     CBasicTestExchange(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrderScope<HostAtomicType, HostDataType>(dataType,
                                                                 useSVM)
+    {}
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
     {
-        StartValue(1234);
-    }
-    virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue)
-    {
+        cl_uint threadCount = DeviceThreads() + MaxHostThreads();
+        // The start value must be outside of tid range [0, threadCount],
+        // otherwise VerifyRefs validation could fail.
+        StartValue(static_cast<HostDataType>(threadCount + 1));
         if constexpr (std::is_same_v<HostDataType, HOST_HALF>)
         {
             if (LocalMemory()
@@ -545,7 +549,7 @@ public:
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScopeStr();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
@@ -560,9 +564,9 @@ public:
             + ");\n";
     }
 
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
     {
         oldValues[tid] = host_atomic_exchange(&destMemory[0], (HostDataType)tid,
                                               MemoryOrder());
@@ -570,9 +574,8 @@ public:
             oldValues[tid] = host_atomic_exchange(
                 &destMemory[0], oldValues[tid], MemoryOrder());
     }
-    virtual bool VerifyRefs(bool &correct, cl_uint threadCount,
-                            HostDataType *refValues,
-                            HostAtomicType *finalValues)
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
     {
         OldValueCheck(
             Iterations() % 2
@@ -746,16 +749,23 @@ public:
     using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::Iterations;
     using CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>::IterationsStr;
     using CBasicTest<HostAtomicType, HostDataType>::CheckCapabilities;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::DeviceThreads;
+    using CBasicTestMemOrderScope<HostAtomicType, HostDataType>::MaxHostThreads;
     CBasicTestCompareStrong(TExplicitAtomicType dataType, bool useSVM)
         : CBasicTestMemOrder2Scope<HostAtomicType, HostDataType>(dataType,
                                                                  useSVM)
     {
-        StartValue(123456);
         OldValueCheck(false);
     }
-    virtual int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
-                                  cl_command_queue queue)
+    int ExecuteSingleTest(cl_device_id deviceID, cl_context context,
+                          cl_command_queue queue) override
     {
+        cl_uint threadCount = DeviceThreads() + MaxHostThreads();
+        // The start value must be outside of tid range [0, threadCount] and
+        // must not match the error markers threadCount and threadCount + 1
+        // (mark unexpected success), see ProgramCore method below.
+        StartValue(static_cast<HostDataType>(threadCount + 2));
+
         if (MemoryOrder2() == MEMORY_ORDER_RELEASE
             || MemoryOrder2() == MEMORY_ORDER_ACQ_REL)
             return 0; // not allowed as 'failure' argument
@@ -777,7 +787,7 @@ public:
             HostAtomicType, HostDataType>::ExecuteSingleTest(deviceID, context,
                                                              queue);
     }
-    virtual std::string ProgramCore()
+    std::string ProgramCore() override
     {
         std::string memoryOrderScope = MemoryOrderScope();
         std::string postfix(memoryOrderScope.empty() ? "" : "_explicit");
@@ -820,9 +830,9 @@ public:
               "    }\n"
               "  }\n";
     }
-    virtual void HostFunction(cl_uint tid, cl_uint threadCount,
-                              volatile HostAtomicType *destMemory,
-                              HostDataType *oldValues)
+    void HostFunction(cl_uint tid, cl_uint threadCount,
+                      volatile HostAtomicType *destMemory,
+                      HostDataType *oldValues) override
     {
         HostDataType expected = (HostDataType)StartValue(), previous;
         oldValues[tid] = (HostDataType)tid;
@@ -843,9 +853,8 @@ public:
             }
         }
     }
-    virtual bool VerifyRefs(bool &correct, cl_uint threadCount,
-                            HostDataType *refValues,
-                            HostAtomicType *finalValues)
+    bool VerifyRefs(bool &correct, cl_uint threadCount, HostDataType *refValues,
+                    HostAtomicType *finalValues) override
     {
         correct = true;
         /* We are expecting values from 0 to size-1 and initial value from
