@@ -69,3 +69,9 @@ include_directories (${CLConform_INCLUDE_DIR})
 if (NOT WIN32)
 target_link_libraries(vulkan_wrapper dl)
 endif()
+
+# vulkan_wrapper calls OpenCL APIs (e.g. clCreateBufferWithProperties), so it
+# depends on the OpenCL library. Declaring the dependency makes the linker see
+# OpenCL after libvulkan_wrapper.a; otherwise strict left-to-right linkers such
+# as MinGW ld fail with undefined references because -lOpenCL precedes it.
+target_link_libraries(vulkan_wrapper ${OPENCL_LIBRARIES})
