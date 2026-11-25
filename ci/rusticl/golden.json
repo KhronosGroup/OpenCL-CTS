@@ -10,6 +10,14 @@
             "math_edge_cases": "pass"
         }
     },
+    "test_c11_atomics": {
+        "": {
+            "atomic_compare_exchange_strong": "pass",
+            "atomic_exchange": "pass",
+            "svm_atomic_compare_exchange_strong": "pass",
+            "svm_atomic_exchange": "pass"
+        }
+    },
     "test_cl_copy_images": {
         "--num-worker-threads 2 small_images": {
             "1DTo1Dbuffer_CL_FLOAT": "pass",
