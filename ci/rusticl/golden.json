@@ -345,6 +345,11 @@
             "3D_CL_UNSIGNED_INT8": "pass"
         }
     },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
@@ -361,6 +366,12 @@
             "shuffle_built_in_dual_input": "pass",
             "shuffle_copy": "pass",
             "shuffle_function_call": "pass"
+        }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
         }
     }
 }

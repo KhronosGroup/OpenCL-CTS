@@ -172,25 +172,41 @@ int runTestHarness(int argc, const char *argv[], int forceNoContextCreation,
                                    queueProps, NULL);
 }
 
-int suite_did_not_pass_init(const char *suiteName, const char *args,
-                            test_status status, int testNum,
-                            test_definition testList[])
+static int
+select_command_line_tests(int argc, const char *argv[], int testNum,
+                          test_definition testList[],
+                          std::vector<unsigned char> &selectedTestList);
+
+static int suite_did_not_pass_init(const char *suiteName, const char *args,
+                                   int argc, const char *argv[],
+                                   test_status status, int testNum,
+                                   test_definition testList[])
 {
     if (status == TEST_SKIPPED_ITSELF)
     {
         status = TEST_SKIP;
     }
-    std::vector<unsigned char> selectedTestList(testNum, 1);
+
+    std::vector<unsigned char> selectedTestList;
+    if (select_command_line_tests(argc, argv, testNum, testList,
+                                  selectedTestList)
+        != EXIT_SUCCESS)
+    {
+        return EXIT_FAILURE;
+    }
+
     std::vector<test_status> resultTestList(testNum, status);
 
     int ret =
         saveResultsToJson(suiteName, args, testList, selectedTestList.data(),
                           resultTestList.data(), testNum);
 
+    const int selected =
+        std::count(selectedTestList.begin(), selectedTestList.end(), 1);
     log_info("Test %s while initialization\n",
              status == TEST_SKIP ? "skipped" : "failed");
     log_info("%s %d of %d tests.\n", status == TEST_SKIP ? "SKIPPED" : "FAILED",
-             testNum, testNum);
+             selected, selected);
 
     if (ret != EXIT_SUCCESS)
     {
@@ -687,7 +703,7 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
         if (spirv_readiness != TEST_PASS)
         {
             auto args = removed_args_to_string(removed_args);
-            return suite_did_not_pass_init(suiteName, args.c_str(),
+            return suite_did_not_pass_init(suiteName, args.c_str(), argc, argv,
                                            spirv_readiness, testNum, testList);
         }
     }
@@ -699,8 +715,8 @@ int runTestHarnessWithCheckAndParse(int argc, const char *argv[],
         if (status != TEST_PASS)
         {
             auto args = removed_args_to_string(removed_args);
-            return suite_did_not_pass_init(suiteName, args.c_str(), status,
-                                           testNum, testList);
+            return suite_did_not_pass_init(suiteName, args.c_str(), argc, argv,
+                                           status, testNum, testList);
         }
     }
 
@@ -814,61 +830,68 @@ static void print_results(int failed, int count, const char *name)
     fflush(stdout);
 }
 
+static int
+select_command_line_tests(int argc, const char *argv[], int testNum,
+                          test_definition testList[],
+                          std::vector<unsigned char> &selectedTestList)
+{
+    selectedTestList.assign(testNum, 0);
+
+    if (argc == 1)
+    {
+        /* No actual arguments, all tests will be run. */
+        std::fill(selectedTestList.begin(), selectedTestList.end(), 1);
+        return EXIT_SUCCESS;
+    }
+
+    for (int i = 1; i < argc; i++)
+    {
+        int ret = EXIT_SUCCESS;
+        if (strchr(argv[i], '*') != NULL)
+        {
+            ret = find_matching_tests(testList, selectedTestList.data(),
+                                      testNum, argv[i], true);
+        }
+        else if (strcmp(argv[i], "all") == 0)
+        {
+            std::fill(selectedTestList.begin(), selectedTestList.end(), 1);
+            break;
+        }
+        else
+        {
+            ret = find_matching_tests(testList, selectedTestList.data(),
+                                      testNum, argv[i], false);
+        }
+
+        if (ret == EXIT_FAILURE)
+        {
+            return EXIT_FAILURE;
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int parseAndCallCommandLineTests(int argc, const char *argv[], const char *args,
                                  cl_device_id device, int testNum,
                                  test_definition testList[],
                                  const test_harness_config &config)
 {
-    int ret = EXIT_SUCCESS;
-
-    unsigned char *selectedTestList = (unsigned char *)calloc(testNum, 1);
-
-    if (argc == 1)
-    {
-        /* No actual arguments, all tests will be run. */
-        memset(selectedTestList, 1, testNum);
-    }
-    else
-    {
-        for (int i = 1; i < argc; i++)
-        {
-            if (strchr(argv[i], '*') != NULL)
-            {
-                ret = find_matching_tests(testList, selectedTestList, testNum,
-                                          argv[i], true);
-            }
-            else
-            {
-                if (strcmp(argv[i], "all") == 0)
-                {
-                    memset(selectedTestList, 1, testNum);
-                    break;
-                }
-                else
-                {
-                    ret = find_matching_tests(testList, selectedTestList,
-                                              testNum, argv[i], false);
-                }
-            }
-
-            if (ret == EXIT_FAILURE)
-            {
-                break;
-            }
-        }
-    }
+    std::vector<unsigned char> selectedTestList;
+    int ret = select_command_line_tests(argc, argv, testNum, testList,
+                                        selectedTestList);
 
     if (ret == EXIT_SUCCESS)
     {
         std::vector<test_status> resultTestList(testNum, TEST_PASS);
 
-        callTestFunctions(testList, selectedTestList, resultTestList.data(),
-                          testNum, device, config);
+        callTestFunctions(testList, selectedTestList.data(),
+                          resultTestList.data(), testNum, device, config);
 
         const int skipped =
             std::count(resultTestList.begin(), resultTestList.end(), TEST_SKIP);
         const int selected =
-            std::count(selectedTestList, selectedTestList + testNum, 1);
+            std::count(selectedTestList.begin(), selectedTestList.end(), 1);
         if (skipped > 0 && skipped == selected)
         {
             log_info("SKIPPED %d of %d tests.\n", skipped, selected);
@@ -877,8 +900,9 @@ int parseAndCallCommandLineTests(int argc, const char *argv[], const char *args,
         print_results(gFailCount, gTestCount, "sub-test");
         print_results(gTestsFailed, gTestsFailed + gTestsPassed, "test");
 
-        ret = saveResultsToJson(argv[0], args, testList, selectedTestList,
-                                resultTestList.data(), testNum);
+        ret =
+            saveResultsToJson(argv[0], args, testList, selectedTestList.data(),
+                              resultTestList.data(), testNum);
 
         if (std::any_of(resultTestList.begin(), resultTestList.end(),
                         [](test_status result) {
@@ -894,8 +918,6 @@ int parseAndCallCommandLineTests(int argc, const char *argv[], const char *args,
             ret = EXIT_FAILURE;
         }
     }
-
-    free(selectedTestList);
 
     return ret;
 }

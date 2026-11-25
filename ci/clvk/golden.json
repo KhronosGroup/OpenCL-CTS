@@ -344,6 +344,11 @@
             "3D_CL_UNSIGNED_INT8": "pass"
         }
     },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
@@ -351,6 +356,12 @@
             "device_uuid": "pass",
             "extended_versioning": "pass",
             "pci_bus_info": "skip"
+        }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
         }
     }
 }

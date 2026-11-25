@@ -35,7 +35,7 @@ static test_status parseArgs(int &argc, const char *argv[],
                              std::vector<std::string> &removed_args,
                              std::string &help)
 {
-    std::vector<const char *> argList;
+    std::vector<const char *> argList{ argv[0] };
     for (int i = 1; i < argc; i++)
     {
         if (strcmp(argv[i], "-strict") == 0)
