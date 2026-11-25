@@ -5,6 +5,19 @@
             "negative_enqueue_invalid_work_dim": "pass"
         }
     },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "pass"
+        }
+    },
+    "test_c11_atomics": {
+        "": {
+            "atomic_compare_exchange_strong": "pass",
+            "atomic_exchange": "pass",
+            "svm_atomic_compare_exchange_strong": "pass",
+            "svm_atomic_exchange": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
@@ -92,6 +105,12 @@
             "shuffle_built_in_dual_input": "pass",
             "shuffle_copy": "pass",
             "shuffle_function_call": "pass"
+        }
+    },
+    "test_subgroups": {
+        "": {
+            "ifp_core": "skip",
+            "ifp_ext": "skip"
         }
     }
 }

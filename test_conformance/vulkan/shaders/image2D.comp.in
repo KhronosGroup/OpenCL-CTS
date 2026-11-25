@@ -12,7 +12,7 @@ layout(constant_id = 0) const uint MAX_2D_IMAGES = 5;
 layout(constant_id = 1) const uint MAX_2D_IMAGE_MIP_LEVELS = 1;
 
 layout(binding = 1, ${GLSL_FORMAT}) uniform ${GLSL_TYPE_PREFIX}image2D image2DList[MAX_2D_IMAGES * MAX_2D_IMAGE_MIP_LEVELS];
-layout(local_size_x = 32, local_size_y = 32) in;
+layout(local_size_x = 16, local_size_y = 8) in;
 
 void main()
 {

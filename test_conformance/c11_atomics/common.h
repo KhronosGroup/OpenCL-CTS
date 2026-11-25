@@ -487,6 +487,7 @@ public:
         ss << _iterations;
         return ss.str();
     }
+    cl_uint DeviceThreads() { return _deviceThreads; }
 
 private:
     const TExplicitAtomicType _dataType;
