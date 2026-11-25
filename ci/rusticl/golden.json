@@ -5,6 +5,11 @@
             "negative_enqueue_invalid_work_dim": "pass"
         }
     },
+    "test_bruteforce": {
+        "--wimpy -1": {
+            "math_edge_cases": "pass"
+        }
+    },
     "test_cl_copy_images": {
         "--num-worker-threads 2 small_images": {
             "1DTo1Dbuffer_CL_FLOAT": "pass",
@@ -343,11 +348,6 @@
             "3D_CL_UNSIGNED_INT16": "pass",
             "3D_CL_UNSIGNED_INT32": "pass",
             "3D_CL_UNSIGNED_INT8": "pass"
-        }
-    },
-    "test_bruteforce": {
-        "--wimpy -1": {
-            "math_edge_cases": "pass"
         }
     },
     "test_computeinfo": {
