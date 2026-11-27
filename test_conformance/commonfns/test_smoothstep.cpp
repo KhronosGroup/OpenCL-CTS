@@ -75,19 +75,18 @@ bool is_special_result_valid(const T edge0, const T edge1, const T x,
     const double lower = conv_to_dbl(edge0);
     const double upper = conv_to_dbl(edge1);
 
-    // Float and double input ranges avoid intermediate overflow.
+    // Half inputs can have subnormal edges.
     bool stable_interval = true;
     if constexpr (std::is_same<T, half>::value)
     {
-        // Half intermediates may overflow or flush to zero; subnormal edges
-        // may also be flushed before subtraction.
+        // Subnormal edges or intermediates may be flushed to zero.
         const double width = upper - lower;
-        stable_interval = width >= CL_HALF_MIN && width <= CL_HALF_MAX
+        stable_interval = width >= CL_HALF_MIN
             && (lower == 0.0 || std::fabs(lower) >= CL_HALF_MIN)
             && (upper == 0.0 || std::fabs(upper) >= CL_HALF_MIN);
     }
-    // For x >= edge1, intermediate overflow or flushing can result in NaN,
-    // which gets clamped to 0 instead of 1.
+    // For x >= edge1, flushing can result in NaN, which gets clamped to 0
+    // instead of 1.
     const bool requires_exact_result =
         conv_to_dbl(x) <= lower || (stable_interval && conv_to_dbl(x) >= upper);
     const bool exact_result_mismatch =
@@ -259,8 +258,12 @@ int test_smoothstep_fn(cl_device_id device, cl_context context,
         for (i = 0; i < num_elements; i++)
         {
             input_ptr[0][i] = conv_to_half(get_random_float(-65503, 65503, d));
-            input_ptr[1][i] = conv_to_half(
-                get_random_float(conv_to_flt(input_ptr[0][i]), 65503, d));
+            const float edge0 = conv_to_flt(input_ptr[0][i]);
+            // Make sure edge1 - edge0 fits in half (leaving room for rounding).
+            const float edge1_max =
+                std::fmin(CL_HALF_MAX, edge0 + (CL_HALF_MAX - 32.0f));
+            input_ptr[1][i] =
+                conv_to_half(get_random_float(edge0, edge1_max, d));
             input_ptr[2][i] = conv_to_half(get_random_float(-65503, 65503, d));
         }
     }

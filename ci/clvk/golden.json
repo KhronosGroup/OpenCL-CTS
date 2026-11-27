@@ -66,6 +66,12 @@
             "test_external_semaphores_signal_wait": "skip"
         }
     },
+    "test_commonfns": {
+        "": {
+            "smoothstep": "pass",
+            "smoothstepf": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",

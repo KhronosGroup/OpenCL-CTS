@@ -2144,15 +2144,12 @@ int CoopMatTest::buildAndRun(Variant &variant)
             Bounds inBounds = getBounds(variant.inputA.elementType);
             Bounds outBounds = getBounds(variant.output.elementType);
             Bounds bounds = std::visit(
-                [&](auto in) -> Bounds {
-                    return Bounds{ std::visit(
-                        [&](auto out) -> decltype(in) {
-                            auto mappedBounds = mapBounds<decltype(in)>(out);
-                            return boundsIntersection(mappedBounds, in);
-                        },
-                        outBounds) };
+                [](auto in, auto out) -> Bounds {
+                    using InBounds = std::decay_t<decltype(in)>;
+                    return boundsIntersection<InBounds>(
+                        mapBounds<InBounds>(out), in);
                 },
-                inBounds);
+                inBounds, outBounds);
             variant.inputA.fill(0, bounds);
             variant.inputB.fill(0, bounds);
             variant.inputC.fill(0, bounds);
