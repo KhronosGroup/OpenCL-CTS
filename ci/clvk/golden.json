@@ -35,7 +35,8 @@
     "test_subgroups": {
         "": {
             "ifp_core": "skip",
-            "ifp_ext": "skip"
+            "ifp_ext": "skip",
+            "subgroup_functions_ballot": "pass"
         }
     }
 }
