@@ -46,7 +46,8 @@ void generate_data(std::vector<cl_uchar> &data, size_t size, MTdata seed)
       bitsLeft = 32;
     }
     data[i] = (cl_uchar)( randomData & 255 );
-    randomData >>= 8; randomData -= 8;
+    randomData >>= 8;
+    bitsLeft -= 8;
   }
 }
 
