@@ -358,6 +358,12 @@
             "3D_CL_UNSIGNED_INT8": "pass"
         }
     },
+    "test_commonfns": {
+        "": {
+            "smoothstep": "pass",
+            "smoothstepf": "pass"
+        }
+    },
     "test_computeinfo": {
         "": {
             "computeinfo": "pass",
