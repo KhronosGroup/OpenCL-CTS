@@ -23,3 +23,8 @@ else()
         set(CLConform_SPIRV_TOOLS_TARGET PkgConfig::SPIRV_TOOLS)
     endif()
 endif()
+
+if(NOT CLConform_SPIRV_TOOLS_TARGET)
+    message(FATAL_ERROR
+        "SPIRV-Tools was not found. Install its pkg-config or CMake package.")
+endif()
