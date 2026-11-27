@@ -22,6 +22,7 @@ struct DXFenceNegativeWait final : DXFenceTestBase
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         log_info("Calling clEnqueueWaitSemaphoresKHR\n");
         errcode = clEnqueueWaitSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
                                              nullptr, nullptr);
@@ -30,6 +31,9 @@ struct DXFenceNegativeWait final : DXFenceTestBase
             "Unexpected error code returned from clEnqueueWaitSemaphores");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 
@@ -47,6 +51,7 @@ struct DXFenceNegativeSignal final : DXFenceTestBase
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         log_info("Calling clEnqueueWaitSemaphoresKHR\n");
         errcode = clEnqueueSignalSemaphoresKHR(queue, 1, &semaphore, nullptr, 0,
                                                nullptr, nullptr);
@@ -55,6 +60,9 @@ struct DXFenceNegativeSignal final : DXFenceTestBase
             "Unexpected error code returned from clEnqueueSignalSemaphores");
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 

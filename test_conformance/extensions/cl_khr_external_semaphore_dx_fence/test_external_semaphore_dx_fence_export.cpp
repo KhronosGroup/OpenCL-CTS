@@ -22,6 +22,7 @@ struct ExportDXSignal final : DXFenceTestBase
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t export_types_size = 0;
         errcode =
             clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
@@ -101,6 +102,9 @@ struct ExportDXSignal final : DXFenceTestBase
         exported_fence->Release();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 
@@ -117,6 +121,7 @@ struct ExportDXWait final : DXFenceTestBase
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t export_types_size = 0;
         errcode =
             clGetDeviceInfo(device, CL_DEVICE_SEMAPHORE_EXPORT_HANDLE_TYPES_KHR,
@@ -209,6 +214,9 @@ struct ExportDXWait final : DXFenceTestBase
         exported_fence->Release();
 
         return TEST_PASS;
+#else
+        return TEST_FAIL;
+#endif
     }
 };
 

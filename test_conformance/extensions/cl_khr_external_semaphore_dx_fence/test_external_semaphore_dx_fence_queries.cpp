@@ -22,6 +22,7 @@ struct DXFenceQueryProperties final : DXFenceTestBase
 
     int Run() override
     {
+#ifdef D3D12_IS_SUPPORTED
         size_t properties_size_bytes = 0;
         errcode = clGetSemaphoreInfoKHR(semaphore, CL_SEMAPHORE_PROPERTIES_KHR,
                                         0, nullptr, &properties_size_bytes);
@@ -45,6 +46,7 @@ struct DXFenceQueryProperties final : DXFenceTestBase
         }
         log_error("Failed to find the dx fence handle type in the semaphore "
                   "properties");
+#endif
         return TEST_FAIL;
     }
 };

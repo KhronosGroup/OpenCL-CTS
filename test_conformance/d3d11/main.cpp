@@ -17,11 +17,18 @@
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include "harness.h"
 #include "harness/testHarness.h"
+#include "harness/deviceInfo.h"
+
+#ifdef D3D11_IS_SUPPORTED
+#include "harness.h"
+#else
+#define CL_KHR_D3D11_SHARING_EXTENSION_NAME "cl_khr_d3d11_sharing"
+#endif
 
 namespace {
 
+#ifdef D3D11_IS_SUPPORTED
 struct D3D11SuiteState
 {
     bool initialized = false;
@@ -111,12 +118,16 @@ test_status InitState(cl_device_id selected_device)
     return State.device_to_target.count(selected_device) ? TEST_PASS
                                                          : TEST_SKIPPED_ITSELF;
 }
+#endif
 
 test_status InitD3D11Device(cl_device_id device)
 {
     REQUIRE_EXTENSION(CL_KHR_D3D11_SHARING_EXTENSION_NAME);
-
+#ifdef D3D11_IS_SUPPORTED
     return InitState(device);
+#else
+    return TEST_FAIL;
+#endif
 }
 
 } // namespace
@@ -128,6 +139,7 @@ int main(int argc, const char* argv[])
         test_registry::getInstance().definitions(), true, 0, InitD3D11Device);
 }
 
+#ifdef D3D11_IS_SUPPORTED
 template <typename TargetFn>
 int RunD3D11TargetTest(cl_device_id device, TargetFn target_fn)
 {
@@ -187,9 +199,11 @@ int RunD3D11InteropTest(cl_device_id device, TargetFn target_fn)
             return testResult;
         });
 }
+#endif
 
 REGISTER_TEST(enumeration)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11TargetTest(device,
                               [&](const DirectX11Wrapper::DeviceEntry* target) {
                                   cl_uint num_devices = 0;
@@ -197,18 +211,26 @@ REGISTER_TEST(enumeration)
                                       State.platform, target->dx_adapter.Get(),
                                       target->dx_device.Get(), &num_devices);
                               });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(create_context)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11InteropTest(device,
                                [](const DirectX11Wrapper::DeviceEntry*,
                                   cl_context,
                                   cl_command_queue) { return TEST_PASS; });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(buffer)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11InteropTest(
         device,
         [](const DirectX11Wrapper::DeviceEntry* target,
@@ -220,10 +242,14 @@ REGISTER_TEST(buffer)
                                     target->dx_device.Get(),
                                     immediate_context.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(texture2d)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11InteropTest(
         device,
         [device](const DirectX11Wrapper::DeviceEntry* target,
@@ -235,10 +261,14 @@ REGISTER_TEST(texture2d)
                                        target->dx_device.Get(),
                                        immediate_context.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(texture3d)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11InteropTest(
         device,
         [device](const DirectX11Wrapper::DeviceEntry* target,
@@ -250,10 +280,14 @@ REGISTER_TEST(texture3d)
                                        target->dx_device.Get(),
                                        immediate_context.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
 REGISTER_TEST(misc)
 {
+#ifdef D3D11_IS_SUPPORTED
     return RunD3D11InteropTest(
         device,
         [device](const DirectX11Wrapper::DeviceEntry* target,
@@ -261,8 +295,12 @@ REGISTER_TEST(misc)
             return TestDeviceMisc(device, interop_context, interop_queue,
                                   target->dx_device.Get());
         });
+#else
+    return TEST_SKIPPED_ITSELF;
+#endif
 }
 
+#ifdef D3D11_IS_SUPPORTED
 int TestAdapterEnumeration(cl_platform_id platform, IDXGIAdapter* pAdapter,
                            ID3D11Device* pDevice, cl_uint* num_devices)
 {
@@ -463,3 +501,4 @@ Cleanup:
     }
     return testResult == TEST_PASS;
 }
+#endif

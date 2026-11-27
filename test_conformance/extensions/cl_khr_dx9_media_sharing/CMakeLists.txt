@@ -1,11 +1,7 @@
-if(WIN32)
-list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
 set(MODULE_NAME MEDIA_SURFACE_SHARING)
 
 set(${MODULE_NAME}_SOURCES
         main.cpp
-        wrappers.cpp
-        utils.cpp
         test_create_context.cpp
         test_functions_api.cpp
         test_functions_kernel.cpp
@@ -15,6 +11,14 @@ set(${MODULE_NAME}_SOURCES
         test_other_data_types.cpp
     )
 
+if(WIN32)
+  list(APPEND CLConform_LIBRARIES d3d9.lib dxva2.lib )
+  list(APPEND ${MODULE_NAME}_SOURCES
+        wrappers.cpp
+        utils.cpp
+  )
+endif()
+
 set_source_files_properties(
         ${MODULE_NAME}_SOURCES
         PROPERTIES LANGUAGE CXX)
@@ -22,4 +26,3 @@ set_source_files_properties(
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 include(../../CMakeCommon.txt)
-endif(WIN32)
