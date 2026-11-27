@@ -84,7 +84,6 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
     int64_t maxError2 = 0;
     float maxErrorVal = 0.0f;
     float maxErrorVal2 = 0.0f;
-    uint64_t step = getTestStep(sizeof(cl_half), BUFFER_SIZE);
 
     // use larger type of output data to prevent overflowing buffer size
     constexpr size_t buffer_size = BUFFER_SIZE / sizeof(int32_t);
@@ -102,18 +101,14 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
                                &build_info)))
         return error;
 
-    for (uint64_t i = 0; i < (1ULL << 32); i += step)
+    for (uint64_t i = 0; i < getInputCount(); i += buffer_size)
     {
         if (gSkipCorrectnessTesting) break;
 
         // Init input array
         cl_half *p = (cl_half *)gIn;
         cl_half *p2 = (cl_half *)gIn2;
-        for (size_t j = 0; j < buffer_size; j++)
-        {
-            p[j] = (cl_half)genrand_int32(d);
-            p2[j] = (cl_half)genrand_int32(d);
-        }
+        fillBinaryInput(p, p2, buffer_size, i, d, gTestAll);
 
         if ((error = clEnqueueWriteBuffer(gQueue, gInBuffer, CL_FALSE, 0,
                                           buffer_size * sizeof(cl_half), gIn, 0,
@@ -435,9 +430,8 @@ int TestFunc_HalfI_Half_Half(const Func *f, MTdata d, bool relaxedMode)
         {
             if (gVerboseBruteForce)
             {
-                vlog("base:%14" PRIu64 " step:%10" PRIu64
-                     "  bufferSize:%10d \n",
-                     i, step, BUFFER_SIZE);
+                vlog("base:%14" PRIu64 " step:%10zu  bufferSize:%10d \n", i,
+                     buffer_size, BUFFER_SIZE);
             }
             else
             {
