@@ -4,6 +4,11 @@
             "enqueue_task": "pass"
         }
     },
+    "test_basic": {
+        "": {
+            "vector_creation": "pass"
+        }
+    },
     "test_bruteforce": {
         "--wimpy -1": {
             "math_edge_cases": "pass"

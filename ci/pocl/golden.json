@@ -48,6 +48,7 @@
             "local_arg_def": "pass",
             "local_kernel_def": "pass",
             "loop": "pass",
+            "vector_creation": "pass",
             "work_item_functions": "pass"
         }
     },
