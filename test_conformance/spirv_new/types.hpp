@@ -17,6 +17,7 @@
 #pragma once
 #include <CL/cl.h>
 #include <CL/cl_half.h>
+#include <type_traits>
 
 #if defined(_MSC_VER)
 #define PACKED(__STRUCT__) __pragma(pack(push, 1)) __STRUCT__ __pragma(pack(pop))
@@ -92,7 +93,7 @@ template<> struct  is_double<cl_double2> { static const bool value = true; };
 template<typename T>
 T genrandReal(RandomSeed &seed)
 {
-    return genrand_real1(seed);
+    return 1.0 + genrand_real1(seed);
 }
 
 // Longer-term this could be refactored out and replace random_float():
@@ -102,12 +103,28 @@ template <typename T> T genrandReal_range(T low, T high, RandomSeed &seed)
     return (1.0 - t) * low + t * high;
 }
 
-template<typename T, int N>
-T genrandRealVec(RandomSeed &seed)
+template <>
+inline cl_half genrandReal_range<cl_half>(cl_half low, cl_half high,
+                                          RandomSeed &seed)
+{
+    float f = genrandReal_range<float>(cl_half_to_float(low),
+                                       cl_half_to_float(high), seed);
+    return cl_half_from_float(f, CL_HALF_RTE);
+}
+
+template <> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
+{
+    float f = (float)(1.0 + genrand_real1(seed));
+    return cl_half_from_float(f, CL_HALF_RTE);
+}
+
+template <typename T, int N> T genrandRealVec(RandomSeed &seed)
 {
     T res;
-    for (int i = 0; i < N; i++) {
-        res.s[i] = genrand_real1(seed);
+    using ScalarT = std::remove_reference_t<decltype(res.s[0])>;
+    for (int i = 0; i < N; i++)
+    {
+        res.s[i] = genrandReal<ScalarT>(seed);
     }
     return res;
 }
@@ -125,12 +142,6 @@ GENRAND_REAL_FUNC(cl_double, 4)
 GENRAND_REAL_FUNC(cl_half, 2)
 GENRAND_REAL_FUNC(cl_half, 4)
 GENRAND_REAL_FUNC(cl_half, 8)
-
-template<> inline cl_half genrandReal<cl_half>(RandomSeed &seed)
-{
-    float f = (float)(1.0 + genrand_real1(seed));
-    return cl_half_from_float(f, CL_HALF_RTE);
-}
 
 template<typename T>
 T genrand(RandomSeed &seed)
