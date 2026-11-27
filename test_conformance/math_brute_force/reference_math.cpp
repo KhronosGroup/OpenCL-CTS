@@ -6088,7 +6088,14 @@ int reference_notl(long double x)
     return r;
 }
 
-long double reference_erfcl(long double x) { return erfc(x); }
+long double reference_erfcl(long double x)
+{
+    // FreeBSD's msun erfcl() (also used by Android's Bionic) returns 1 - x for
+    // |x| < 2^-34, omitting the 2/sqrt(pi) factor. Use 1 - erf(x) in that
+    // range, which avoids the bug without cancellation.
+    if (fabsl(x) < 0x1.0p-34L) return 1.0L - erf(x);
+    return erfc(x);
+}
 long double reference_erfl(long double x) { return erf(x); }
 
 double reference_erfc(double x) { return erfc(x); }
