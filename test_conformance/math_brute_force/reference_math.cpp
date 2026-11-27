@@ -5290,34 +5290,36 @@ long double reference_remquol(long double xd, long double yd, int *n)
 [[maybe_unused]] static double reference_scalbn(double x, int n)
 {
     if (reference_isinf(x) || reference_isnan(x) || x == 0.0) return x;
+    if (n >= 2098) return reference_copysign(INFINITY, x);
+    if (n <= -2099) return reference_copysign(0.0, x);
 
-    int bias = 1023;
     union {
         double d;
-        cl_long l;
+        cl_ulong u;
     } u;
-    u.d = (double)x;
-    int e = (int)((u.l & 0x7ff0000000000000LL) >> 52);
-    if (e == 0)
+    u.d = x;
+
+    int k = (int)((u.u >> 52) & 0x7ff);
+    if (k == 0)
     {
-        u.l |= ((cl_long)1023 << 52);
-        u.d -= 1.0;
-        e = (int)((u.l & 0x7ff0000000000000LL) >> 52) - 1022;
+        // subnormal input: normalize by scaling up into the normal range
+        u.d = x * 0x1.0p54;
+        k = (int)((u.u >> 52) & 0x7ff) - 54;
     }
-    if (n >= 2098) return reference_copysign(INFINITY, x);
-    e += n;
-    if (e >= 2047) return reference_copysign(INFINITY, x);
-    if (e < -51 || n < -2097) return reference_copysign(0.0, x);
-    if (e <= 0)
+    k += n;
+    if (k >= 0x7ff) return reference_copysign(INFINITY, x);
+    if (k > 0)
     {
-        bias += (e - 1);
-        e = 1;
+        u.u = (u.u & 0x800fffffffffffffULL) | ((cl_ulong)k << 52);
+        return u.d;
     }
-    u.l &= 0x800fffffffffffffLL;
-    u.l |= ((cl_long)e << 52);
-    x = u.d;
-    u.l = ((cl_long)bias << 52);
-    return x * u.d;
+    if (k <= -54) return reference_copysign(0.0, x);
+
+    // subnormal result: build it in the normal range, then scale back down so
+    // the final rounding to subnormal is correct (round-to-nearest, not flush)
+    k += 54;
+    u.u = (u.u & 0x800fffffffffffffULL) | ((cl_ulong)k << 52);
+    return u.d * 0x1.0p-54;
 }
 
 static long double reference_scalblnl(long double x, long n)
@@ -5684,7 +5686,17 @@ double reference_ldexp(double value, int exponent)
 #endif
 }
 
-long double reference_ldexpl(long double x, int n) { return ldexpl(x, n); }
+long double reference_ldexpl(long double x, int n)
+{
+#if LDBL_MANT_DIG == DBL_MANT_DIG && LDBL_MAX_EXP == DBL_MAX_EXP
+    // On platforms where long double has no more precision than double (e.g.
+    // MSVC), the CRT ldexpl can mis-round subnormal results. Route through
+    // reference_scalbn, which rounds subnormal results correctly.
+    return (long double)reference_scalbn((double)x, n);
+#else
+    return ldexpl(x, n);
+#endif
+}
 
 long double reference_coshl(long double x) { return coshl(x); }
 
