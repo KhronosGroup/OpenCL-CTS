@@ -258,8 +258,6 @@ const TestContext *gTestContext = &writableTestContext;
 
 int main(int argc, const char *argv[])
 {
-    return runTestHarnessWithCheckAndParse(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), false, 0, InitCL,
-        parseTestArgs);
+    return runTestHarnessWithCheckAndParse(argc, argv, false, 0, InitCL,
+                                           parseTestArgs);
 }

@@ -125,9 +125,7 @@ test_status InitD3D10Device(cl_device_id device)
 
 int main(int argc, const char* argv[])
 {
-    return runTestHarnessWithCheck(
-        argc, argv, test_registry::getInstance().num_tests(),
-        test_registry::getInstance().definitions(), true, 0, InitD3D10Device);
+    return runTestHarnessWithCheck(argc, argv, true, 0, InitD3D10Device);
 }
 
 template <typename TargetFn>

@@ -921,11 +921,11 @@ int test_write_image_formats(cl_device_id device, cl_context context,
                              cl_mem_object_type imageType,
                              const image_test_context_t &ctx)
 {
-    if( imageSampler->filter_mode == CL_FILTER_LINEAR )
+    if (imageSampler->filter_mode == CL_FILTER_LINEAR)
         // No need to run for linear filters
-        return 0;
+        return TEST_SKIPPED_ITSELF;
 
-    int ret = 0;
+    int ret = TEST_SKIPPED_ITSELF;
 
     log_info( "write_image (%s input) *****************************\n", get_explicit_type_name( inputType ) );
 
@@ -967,14 +967,14 @@ int test_write_image_formats(cl_device_id device, cl_context context,
                 break;
         }
 
-        if( retCode != 0 )
+        if (retCode != 0 && retCode != TEST_SKIPPED_ITSELF)
         {
             gFailCount++;
             log_error( "FAILED: " );
             print_write_header( &imageFormat, true );
             log_info( "\n" );
         }
-        ret += retCode;
+        ret = combine_test_results(ret, retCode);
     }
     return ret;
 }

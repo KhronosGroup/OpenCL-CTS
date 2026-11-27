@@ -38,7 +38,7 @@ int test_get_image_info_3D(cl_device_id device, cl_context context,
         log_info("This device does not support cl_khr_3d_image_writes.\n"
                  "Skipping 3d image write test.\n");
         log_info("-----------------------------------------------------\n\n");
-        return 0;
+        return TEST_SKIPPED_ITSELF;
     }
 
     imageInfo.type = CL_MEM_OBJECT_IMAGE3D;
