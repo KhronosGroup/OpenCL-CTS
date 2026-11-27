@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #endif
 #endif
+#include <algorithm>
 #include <stdint.h>
 
 #if defined(__MINGW32__)
@@ -36,6 +37,9 @@
 
 inline void* align_malloc(size_t size, size_t alignment)
 {
+    // Ensure a valid minimum alignment for all allocators. In particular,
+    // MSVC _aligned_malloc rejects an alignment of 0.
+    alignment = std::max(alignment, sizeof(void*));
 #if defined(_WIN32) && defined(_MSC_VER)
     return _aligned_malloc(size, alignment);
 #elif defined(__linux__) || defined(linux) || defined(__APPLE__)
@@ -44,10 +48,6 @@ inline void* align_malloc(size_t size, size_t alignment)
     ptr = memalign(alignment, size);
     if (ptr) return ptr;
 #else
-    if (alignment < sizeof(void*))
-    {
-        alignment = sizeof(void*);
-    }
     if (0 == posix_memalign(&ptr, alignment, size)) return ptr;
 #endif
     return NULL;
