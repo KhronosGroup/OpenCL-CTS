@@ -551,7 +551,6 @@ static test_status ParseArgs(int &argc, const char *argv[],
 
     gMTdata = MTdataHolder(gRandomSeed);
 
-    initInputCount(gWimpyReductionFactor);
     return TEST_PASS;
 }
 
@@ -884,6 +883,8 @@ test_status InitCL(cl_device_id device)
                  "Running single threaded.\n");
         }
     }
+
+    initInputCount(gWimpyReductionFactor);
 
     return TEST_PASS;
 }

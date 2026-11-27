@@ -18,6 +18,7 @@
 
 #include "utility.h" // for sizeNames and sizeValues.
 
+#include <algorithm>
 #include <climits>
 #include <vector>
 #include <sstream>
@@ -865,19 +866,17 @@ static uint32_t getExponentDeBruijn(uint32_t number)
 static uint32_t input_count_power_of_two = 27;
 void initInputCount(int wimpyReductionFactor)
 {
-    if (gTestAll)
-    {
-        input_count_power_of_two = 32;
-    }
+    input_count_power_of_two = gTestAll ? 32 : 27;
+    uint32_t reduction = 0;
     if (gWimpyMode)
     {
-        input_count_power_of_two -= getExponentDeBruijn(wimpyReductionFactor);
+        reduction += getExponentDeBruijn(wimpyReductionFactor);
     }
     if (gIsEmbedded)
     {
-        input_count_power_of_two -=
-            getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
+        reduction += getExponentDeBruijn(EMBEDDED_REDUCTION_FACTOR);
     }
+    input_count_power_of_two -= std::min(input_count_power_of_two, reduction);
 }
 uint64_t getInputCount() { return 1ULL << input_count_power_of_two; }
 
