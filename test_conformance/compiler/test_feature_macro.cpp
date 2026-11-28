@@ -16,6 +16,10 @@
 #include "testBase.h"
 #include <vector>
 #include <algorithm>
+#include <cstring>
+#include <string>
+#include <tuple>
+#include <type_traits>
 #include "errorHelpers.h"
 #include "harness/featureHelpers.h"
 
@@ -916,4 +920,111 @@ REGISTER_TEST(features_macro_coupling)
     }
 
     return TEST_PASS;
+}
+
+namespace {
+
+template <typename T>
+int test_float_atomics_macros(cl_device_id device, cl_context context,
+                              bool ext_supported)
+{
+    const char* extension = nullptr;
+    cl_device_info caps_query = CL_DEVICE_SINGLE_FP_ATOMIC_CAPABILITIES_EXT;
+    if (std::is_same<T, cl_half>::value)
+    {
+        extension = "cl_khr_fp16";
+        caps_query = CL_DEVICE_HALF_FP_ATOMIC_CAPABILITIES_EXT;
+    }
+    else if (std::is_same<T, cl_double>::value)
+    {
+        extension = "cl_khr_fp64";
+        caps_query = CL_DEVICE_DOUBLE_FP_ATOMIC_CAPABILITIES_EXT;
+    }
+
+    // If the type is not supported, none of its macros may be defined!
+    const bool type_supported = ext_supported
+        && (extension == nullptr || is_extension_available(device, extension));
+
+    const char* mems[] = { "global", "local" };
+    const char* ops[] = { "load_store", "add", "min_max" };
+    // Each macro must be defined when the corresponding capability bit is set
+    const cl_device_fp_atomic_capabilities_ext caps[][2] = {
+        { CL_DEVICE_GLOBAL_FP_ATOMIC_LOAD_STORE_EXT,
+          CL_DEVICE_LOCAL_FP_ATOMIC_LOAD_STORE_EXT },
+        { CL_DEVICE_GLOBAL_FP_ATOMIC_ADD_EXT,
+          CL_DEVICE_LOCAL_FP_ATOMIC_ADD_EXT },
+        { CL_DEVICE_GLOBAL_FP_ATOMIC_MIN_MAX_EXT,
+          CL_DEVICE_LOCAL_FP_ATOMIC_MIN_MAX_EXT },
+    };
+    const std::string width = std::to_string(sizeof(T) * 8);
+
+    int error = TEST_PASS;
+    for (size_t i = 0; i < ARRAY_SIZE(ops); i++)
+    {
+        // load/store macros are defined only for fp16
+        if (!strcmp(ops[i], "load_store") && sizeof(T) != sizeof(cl_half))
+            continue;
+
+        for (size_t j = 0; j < ARRAY_SIZE(mems); j++)
+        {
+            std::string test_macro_name = "__opencl_c_ext_fp" + width + "_"
+                + mems[j] + "_atomic_" + ops[i];
+
+            cl_bool api_status = CL_FALSE;
+            if (type_supported)
+            {
+                cl_int err = check_api_feature_info_capabilities<
+                    cl_device_fp_atomic_capabilities_ext>(
+                    device, context, api_status, caps_query, caps[i][j]);
+                if (err != CL_SUCCESS) return err;
+            }
+
+            cl_bool compiler_status;
+            cl_int err = check_compiler_feature_info(
+                device, context, test_macro_name, compiler_status);
+            if (err != CL_SUCCESS) return err;
+
+            if (api_status != compiler_status)
+            {
+                log_error("Failed with %s: API %s, compiler %s\n",
+                          test_macro_name.c_str(),
+                          api_status ? "supported" : "not supported",
+                          compiler_status ? "supported" : "not supported");
+                error = TEST_FAIL;
+            }
+        }
+    }
+    return error;
+}
+
+template <std::size_t Cnt = 0, typename... Tp>
+typename std::enable_if<Cnt == sizeof...(Tp), int>::type
+for_each_elem(const std::tuple<Tp...>&, cl_device_id, cl_context, bool)
+{
+    return TEST_PASS;
+}
+
+template <std::size_t Cnt = 0, typename... Tp>
+typename std::enable_if<(Cnt < sizeof...(Tp)), int>::type
+for_each_elem(const std::tuple<Tp...>& t, cl_device_id device,
+              cl_context context, bool ext_supported)
+{
+    using T = typename std::tuple_element<Cnt, std::tuple<Tp...>>::type;
+    int error = test_float_atomics_macros<T>(device, context, ext_supported);
+    error |= for_each_elem<Cnt + 1, Tp...>(t, device, context, ext_supported);
+    return error;
+}
+
+} // anonymous namespace
+
+// This test checks the feature macros defined by cl_ext_float_atomics
+REGISTER_TEST_VERSION(features_macro_float_atomics, Version(3, 0))
+{
+    CHECK_COMPILER_AVAILABLE(device);
+
+    const bool ext_supported =
+        is_extension_available(device, "cl_ext_float_atomics");
+
+    return for_each_elem(std::tuple<cl_float, cl_half, cl_double>(), device,
+                         context, ext_supported);
 }
